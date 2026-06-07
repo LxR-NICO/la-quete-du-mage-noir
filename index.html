@@ -229,6 +229,7 @@
         if (s.inventory.dagger.hasIt) html += `<span style="color:#888">Dague${s.inventory.dagger.magicRegen?"✨":s.inventory.dagger.poisoned?"☠":""} (${s.inventory.dagger.damage})</span>`;
         if (s.inventory.armor.hasIt && s.inventory.armor.bonus > s.equippedArmorBonus) html += `<span style="color:#888">Armure (Non équipée)</span>`;
         if (s.hasBache) html += `<span style="color:#a07050">🧢 Bâche</span>`;
+        if (s.inventory.onguent) html += `<span style="color:#4a8a2a">🌿 Onguent</span>`;
         
         uiStats.innerHTML = html;
     }
@@ -241,7 +242,7 @@
         const div = document.createElement('div');
         div.className = "log-line";
         if (text.startsWith("────")) div.classList.add("log-sep");
-        else if (text.startsWith("[ PV")) div.classList.add("log-stat");
+        else if (text.startsWith("[ PV") || text.startsWith("[ EXP")) div.classList.add("log-stat");
         else if (text.startsWith("⚔")) div.classList.add("log-title");
         else if (text.includes("coup critique")) div.classList.add("log-crit");
         else if (text.includes("Félicitations") || text.includes("vaincu l'adversité")) div.classList.add("log-win");
@@ -274,7 +275,7 @@
                 axe: { damage: 0, poisoned: false, hasIt: false },
                 dagger: { damage: 0, poisoned: false, magicRegen: false, hasIt: false },
                 armor: { bonus: 0, hasIt: false },
-                mushrooms: 0, poison: 0, potions: 0, goldenFeather: false
+                mushrooms: 0, poison: 0, potions: 0, goldenFeather: false, onguent: false
             },
             ville: {
                 jour: 1, fatigue: 0, areneVictoires: 0, missionsCompletes: 0,
@@ -388,6 +389,18 @@
             else if (lieu === 144) brasDeFer();
             else if (lieu === 150) nuit();
             else if (lieu === 200) quitterVille();
+            // Nouveaux lieux - Marécages
+            else if (lieu === 201) entreeMarecage();
+            else if (lieu === 202) cheminPlanches();
+            else if (lieu === 203) vaseEpaisse();
+            else if (lieu === 204) arbrePendu();
+            else if (lieu === 205) enigmeSorciere();
+            else if (lieu === 206) combatSorciere();
+            else if (lieu === 207) lacNoir();
+            else if (lieu === 208) monstreLac();
+            else if (lieu === 209) coeurPutride();
+            else if (lieu === 210) autelOublie();
+            else if (lieu === 211) sortieMarecage();
         });
     }
 
@@ -401,13 +414,9 @@
     function promptCombatAction() {
         updateStats();
         let c = s.combat;
-        // Affiche l'EXP accumulée dans ce combat
-        if (c.roundExp > 0) {
-            addLines([`[ EXP gagnée ce combat : ${c.roundExp} ]`]);
-        }
         
         if (s.inventory.sword.hasIt) {
-            let label = `Attaquer à l'épée${s.inventory.sword.poisoned ? " (empoisonnée)" : ""}${s.inventory.sword.sacred ? " ✨sacrée (EXP bonus)" : ""} — chance sur 12`;
+            let label = `Attaquer à l'épée${s.inventory.sword.poisoned ? " (empoisonnée)" : ""}${s.inventory.sword.sacred ? " ✨sacrée" : ""} — chance sur 12`;
             addChoice(label, () => executeAttack("sword", 12), "btn-action");
         }
         if (s.inventory.axe.hasIt) addChoice(`Attaquer à la hache${s.inventory.axe.poisoned ? " (empoisonnée)" : ""} — chance sur 16`, () => executeAttack("axe", 16), "btn-action");
@@ -500,19 +509,19 @@
                 s.PV = Math.min(s.PV + 1, s.maxPV);
                 addLines(["La dague magique absorbe l'énergie vitale ennemie : +1 PV !"]);
             }
-            // Épée sacrée : bonus EXP à chaque coup réussi (1/3 de chance)
+            // Épée sacrée : bonus EXP direct à chaque coup réussi (1/3 de chance)
             if (weaponKey === "sword" && w.sacred && randint(1, 3) === 1) {
                 s.EXP += 1;
                 s.combat.roundExp += 1;
-                addLines(["✨ L'épée sacrée pulse d'une lueur divine et vous insuffle de l'expérience ! (+1 EXP)"]);
+                addLines(["✨ L'épée sacrée pulse d'une lueur divine et vous insuffle de l'expérience !"]);
             }
         } else {
             addLines(["", "Vous avez raté votre attaque."]);
         }
-        // +1 EXP par round de combat
+        // Accumulation d'EXP cachée par round
         s.EXP += 1;
         s.combat.roundExp += 1;
-        addLines([`[ +1 EXP ce round — Total combat : ${s.combat.roundExp} EXP ]`]);
+        
         enemyAttack();
     }
 
@@ -524,9 +533,9 @@
         }
         
         if (c.pva <= 0) {
-            addLines(["", "Félicitations, valeureux guerrier.", "Vous avez vaincu l'adversité avec force et courage."]);
-            s.EXP += 1;
-            addLines([`[ +1 EXP pour la victoire — EXP total : ${s.EXP} ]`]);
+            addLines(["", "────────────────────────────────────────────────────────────────────────────────", "Félicitations, valeureux guerrier.", "Vous avez vaincu l'adversité avec force et courage."]);
+            s.EXP += 1; // Bonus de victoire
+            addLines([`[ Total d'expérience remportée pour ce combat : ${c.roundExp + 1} EXP ]`, "────────────────────────────────────────────────────────────────────────────────"]);
             let cb = c.onWin;
             let isArene = c.isArene;
             s.combat = null;
@@ -552,7 +561,6 @@
         promptCombatAction();
     }
 
-    // --- MORT DANS L'ARÈNE : infirmerie, perte de 2 jours ---
     function areneInfirmerie() {
         s.combat = null;
         s.PV = Math.max(1, Math.floor(s.maxPV / 2));
@@ -593,7 +601,7 @@
         uiControls.appendChild(btn);
     }
 
-    // --- LIEUX ET SCENARIO COMPLET ---
+    // --- LIEUX ---
     function montagne() {
         s.b += 3;
         addLines(["", "Vous commencez à grimper laborieusement. La fatigue commence à se faire sentir.", "Vous apercevez finalement une caverne au loin."]);
@@ -703,12 +711,10 @@
         }
     }
 
-    // BANDITS — avec test d'agilité
     function bandits() {
         s.b += 1;
         addLines(["", "Vous continuez votre chemin dans cette direction, et le sentier s'élargit.", "Vous avancez, réjoui de pouvoir enfin progresser sans trébucher ni vous faire fouetter par les basses branches.", "Cependant, cette paix intérieure ne dura pas longtemps : le chemin se rétrécit à quelques mètres de vous.", "Vous vous arrêtez, hésitant, lorsqu'un groupe de 3 bandits vous saute brusquement dessus !"]);
 
-        // TEST D'AGILITÉ : éviter partiellement l'embuscade
         const roll = randint(1, 20);
         if (s.PA >= roll) {
             addLines(["", "Votre instinct de guerrier entre en jeu ! Vous percevez le danger une fraction de seconde à l'avance.", "Vous bondissez sur le côté et esquivez le gros de l'attaque. Les bandits ne vous ont touché que superficiellement (-1 PV)."]);
@@ -860,18 +866,15 @@
     function tempeteSable() {
         addLines(["", "Vous progressez depuis plusieurs heures lorsque le ciel vire soudainement au jaune orangé.", "Un rugissement sourd monte de l'horizon : une tempête de sable approche à toute vitesse.", "Vous n'avez que quelques instants pour réagir."]);
         if (s.hasBache) {
-            addChoice("🧢 Vous abriter sous votre bâche (meilleure protection grâce à la bâche)", () => tempeteBache());
+            addChoice("🧢 Vous abriter sous votre bâche (meilleure protection)", () => {
+                addLines(["", "Vous mettez rapidement votre dromadaire à genoux, déployez votre grande bâche et vous en enveloppez entièrement.", "La bâche résiste admirablement au vent et retient le sable à l'extérieur.", "La tempête fait rage pendant de longues minutes, mais sous votre abri improvisé, vous êtes parfaitement protégé.", "Lorsque le silence revient, vous émergez de votre bâche sans une égratignure.", "Votre dromadaire, lui, s'est enfui dans la tempête malgré tout. Vous êtes désormais à pied.", "Au loin, les premiers contreforts d'une région rocheuse se dessinent : les Falaises de Keth."]);
+                s.hasBache = false;
+                addChoice("Continuer vers les falaises", () => processLieu(33));
+            });
         }
         addChoice("Vous allonger derrière votre dromadaire et vous couvrir", () => processLieu(30));
         addChoice("Foncer à toute allure pour tenter de la devancer", () => processLieu(31));
         addChoice("Chercher un abri rocheux à proximité", () => processLieu(32));
-    }
-
-    function tempeteBache() {
-        addLines(["", "Vous mettez rapidement votre dromadaire à genoux, déployez votre grande bâche et vous en enveloppez entièrement.", "La bâche résiste admirablement au vent et retient le sable à l'extérieur.", "La tempête fait rage pendant de longues minutes, mais sous votre abri improvisé, vous êtes parfaitement protégé.", "Lorsque le silence revient, vous émergez de votre bâche sans une égratignure.", "Votre dromadaire, lui, s'est enfui dans la tempête malgré tout. Vous êtes désormais à pied.",
-            "Au loin, les premiers contreforts d'une région rocheuse se dessinent : les Falaises de Keth."]);
-        s.hasBache = false;
-        addChoice("Continuer vers les falaises (indemne)", () => processLieu(33));
     }
 
     function tempeteAbri() {
@@ -956,7 +959,6 @@
         addChoice("⚔  Quitter Kair Morten et affronter votre destin", () => processLieu(200));
     }
 
-    // ARÈNE — liste des adversaires
     const ARENE_ADVERSAIRES = [
         { key: "gladiateur",  nom: "Le Gladiateur Borgne",   pv: 12,  da: 2, or: 8,   exp: 1, lieu: 101 },
         { key: "berserker",   nom: "Le Berserker Nain",       pv: 18,  da: 3, or: 15,  exp: 2, lieu: 102 },
@@ -976,13 +978,10 @@
             v < 10 ? "Vous êtes une légende de l'arène. Les monstres les plus redoutables réclament votre tête." :
             "Votre nom seul fait trembler les combattants. Seules les créatures les plus terrifiantes osent vous défier."]);
 
-        // Calcul du nombre de victoires + 1 = prochain adversaire débloqué
-        // Un adversaire est disponible si : index <= nombre de victoires ET pas encore définitivement vaincu
         let hasChoice = false;
         ARENE_ADVERSAIRES.forEach((adv, idx) => {
-            // Débloqué si l'index est <= nombre total de victoires (victoire 0 = gladiateur dispo, victoire 1 = berserker dispo, etc.)
             if (idx <= v && !vaincus.includes(adv.key)) {
-                addChoice(`${adv.nom} — PV:${adv.pv} DA:${adv.da} → Gain: ${adv.or} or, ${adv.exp} EXP`, () => processLieu(adv.lieu));
+                addChoice(`${adv.nom} — PV:${adv.pv} DA:${adv.da} → Gain: ${adv.or} or`, () => processLieu(adv.lieu));
                 hasChoice = true;
             }
         });
@@ -1008,10 +1007,9 @@
             s.ville.areneVictoires += 1;
             const v = s.ville.areneVictoires;
             if (!s.ville.areneVaincus.includes(key)) s.ville.areneVaincus.push(key);
-            // gainExp-1 car le système de combat ajoute déjà +1 EXP pour la victoire
             for(let i = 0; i < gainExp - 1; i++) { s.EXP += 1; }
             addLines(["", `La foule explose de joie ! Vous avez vaincu ${nom} !`,
-                `Vous empochez ${gainOr} pièces d'or. (EXP +${gainExp})`,
+                `Vous empochez ${gainOr} pièces d'or. (Bonus d'EXP des arènes validé)`,
                 v === 2 ? "\"Impressionnant ! De nouveaux adversaires acceptent de vous affronter.\"" :
                 v === 5 ? "\"Incroyable ! Vous êtes la terreur de l'arène !\" La foule vous couvre de pièces (+10 or bonus)." :
                 v === 10 ? "\"Le Golem de Pierre en personne réclame votre tête !\"" :
@@ -1061,10 +1059,10 @@
     function missions() {
         const mc = s.ville.missionsCompletes;
         addLines(["", "── TABLEAU DES MISSIONS ──", "Un panneau de liège couvert d'avis et de primes. Des aventuriers de tout poil l'étudient avec intérêt."]);
-        if (mc < 1) addChoice("Extermination de rats géants — Récompense : 15 or, 1 EXP", () => lancerMission(0));
-        if (mc < 2) addChoice("Escorte du marchand Tolbas — Récompense : 25 or, 2 EXP", () => lancerMission(1));
-        if (mc < 3) addChoice("La Bête de la Carrière — Récompense : 50 or, 3 EXP + armure", () => lancerMission(2));
-        if (mc < 4) addChoice("Le Mage Renégat de la Vieille Tour — Récompense : 80 or, 4 EXP + tome", () => lancerMission(3));
+        if (mc < 1) addChoice("Extermination de rats géants — Récompense : 15 or", () => lancerMission(0));
+        if (mc < 2) addChoice("Escorte du marchand Tolbas — Récompense : 25 or", () => lancerMission(1));
+        if (mc < 3) addChoice("La Bête de la Carrière — Récompense : 50 or + armure", () => lancerMission(2));
+        if (mc < 4) addChoice("Le Mage Renégat de la Vieille Tour — Récompense : 80 or + tome", () => lancerMission(3));
         if (mc >= 4) addLines(["Vous avez accompli toutes les missions disponibles. De nouvelles missions apparaîtront demain."]);
         addChoice("Retourner en ville", () => processLieu(99));
     }
@@ -1143,7 +1141,14 @@
     function rumeurs() {
         if (s.OR < 3) { addLines(["", "Pas assez d'or pour offrir une tournée. Les aventuriers ne parleront pas pour rien."]); addChoice("Retour", () => processLieu(140)); return; }
         s.OR -= 3;
-        const list = ["\"Le Mage Noir aurait une faiblesse : une gemme de lumière peut percer ses défenses. On en trouve dans les mines au-delà des falaises...\"", "\"Un guerrier légendaire attend dans les Terres Hostiles. Il vous rejoindrait si vous lui prouviez votre valeur.\"", "\"Le Mage Noir se nourrit des âmes des morts. Plus vous tardez, plus il devient puissant. Chaque nuit perdue est une âme de plus pour lui.\"", "\"Les créatures des Terres Hostiles ont une faiblesse : le feu. Pensez à vous munir d'huile de flamme avant de partir.\"", "\"Un trésor fabuleux est caché dans la crypte sous la vieille tour. Celui qui l'a cherché n'est jamais revenu...\"", "\"On dit que le Mage Noir était autrefois un simple guérisseur du village voisin. La magie noire l'a corrompu jusqu'à l'âme.\""];
+        const list = [
+            "\"Le Mage Noir aurait une faiblesse : une gemme de lumière peut percer ses défenses. On en trouve dans les mines au-delà des falaises...\"", 
+            "\"Méfiez-vous des Marécages Putrides après les portes. L'eau y est aussi perfide que l'air qu'on y respire...\"", 
+            "\"Le Mage Noir se nourrit des âmes des morts. Plus vous tardez, plus il devient puissant. Chaque nuit perdue est une âme de plus pour lui.\"", 
+            "\"Si vous croisez la Sorcière des Tourbières dans les marécages, ne la mettez pas en colère. Elle aime les devinettes...\"", 
+            "\"Un trésor fabuleux est caché dans la crypte sous la vieille tour. Celui qui l'a cherché n'est jamais revenu...\"", 
+            "\"Ne nagez jamais dans le Lac Noir. Quelque chose d'immense, fait d'écailles et de haine, rôde sous la surface.\""
+        ];
         addLines(["", "Vous offrez une tournée. Les langues se délient.", `Un vieux mercenaire se penche vers vous en chuchotant : ${list[randint(0, 5)]}`]);
         addChoice("Retour", () => processLieu(140));
     }
@@ -1190,16 +1195,255 @@
             "", "────────────────────────────────────────────────────────────────────────────────",
             "Vous bouclez votre sac, vérifiez vos armes une dernière fois, et prenez une grande inspiration.",
             "Les portes massives de Kair Morten s'ouvrent devant vous dans un grondement sourd.",
-            "Au-delà, les Terres Hostiles vous attendent.", "",
-            `Vous partez avec : ${s.PV} PV, ${s.PA} PA, ${s.PF} PF, ${s.OR} pièces d'or.`,
-            `Victoires en arène : ${s.ville.areneVictoires}.  Missions accomplies : ${s.ville.missionsCompletes}.`,
-            "", "La suite de l'aventure — les Terres Hostiles et le Mage Noir — est à venir.",
-            "Votre légende ne fait que commencer, valeureux guerrier.",
+            "Au-delà, les Terres Hostiles vous attendent. La rumeur dit que le chemin vers la forteresse du Mage Noir",
+            "commence par la traversée des tristement célèbres Marécages Putrides.", "",
+            `Vous quittez la civilisation avec : ${s.PV} PV, ${s.PA} PA, ${s.PF} PF, ${s.OR} pièces d'or.`,
+            `Victoires en arène : ${s.ville.areneVictoires}. Missions accomplies : ${s.ville.missionsCompletes}.`,
+            "────────────────────────────────────────────────────────────────────────────────"
+        ]);
+        addChoice("Pénétrer dans les Marécages Putrides", () => processLieu(201), "btn-main");
+    }
+
+    // --- LES MARÉCAGES PUTRIDES ---
+
+    function entreeMarecage() {
+        addLines([
+            "", "Le paysage change radicalement. La végétation verdoyante laisse place à une forêt d'arbres morts, tordus comme des bras agonisants.",
+            "Une brume épaisse, teintée d'un vert maladif, rampe sur le sol fangeux. L'air est lourd, saturé par l'odeur âcre du soufre et de la putréfaction végétale.",
+            "Vous faites vos premiers pas dans les Marécages Putrides. À chaque foulée, la vase tente de happer vos bottes avec un bruit de succion viscéral.",
+            "Le silence n'est brisé que par le clapotis lugubre d'eaux invisibles et les cris lointains d'oiseaux charognards.",
+            "Devant vous, le chemin se divise. À gauche, les vestiges pourrissants d'une ancienne passerelle de bois s'enfoncent dans le brouillard.",
+            "À droite, il n'y a plus de chemin, seulement une immense étendue de boue dense et ténébreuse qu'il vous faudrait traverser à gué."
+        ]);
+        addChoice("Emprunter la passerelle de planches pourries ", () => processLieu(202));
+        addChoice("S'enfoncer directement dans la vase épaisse ", () => processLieu(203));
+    }
+
+    function cheminPlanches() {
+        addLines(["", "Vous vous engagez prudemment sur les planches glissantes. Le bois craque sinistrement sous votre poids.", "Soudain, une planche cède, vous projetant vers les eaux troubles infestées de créatures gélatineuses !"]);
+        
+        let roll = randint(1, 25);
+        if (s.PA >= roll) {
+            addLines(["", "Dans un élan de grâce surhumaine, vous bondissez sur le poteau suivant juste avant que la structure ne s'effondre.", "Vous parvenez à traverser la zone la plus dangereuse sans égratignure !"]);
+            addChoice("Continuer d'avancer dans la brume", () => processLieu(204));
+        } else {
+            s.PV -= 2; s.PA = Math.max(1, s.PA - 1);
+            addLines(["", "Vos réflexes vous font défaut. Vous tombez lourdement dans l'eau vaseuse ! Des sangsues géantes s'accrochent immédiatement à votre chair.", "Vous vous débattez violemment et parvenez à regagner la terre ferme en arrachant les parasites, mais vous y laissez des forces (-2 PV, -1 PA)."]);
+            if (s.PV <= 0) return declareDefeat("Les eaux sangsues du marais");
+            addChoice("Vous relever péniblement et continuer", () => processLieu(204));
+        }
+    }
+
+    function vaseEpaisse() {
+        s.PV -= 1; s.PA = Math.max(1, s.PA - 1);
+        addLines([
+            "", "La boue vous monte rapidement jusqu'aux genoux, puis jusqu'aux cuisses.",
+            "Chaque pas est une torture. L'eau glaciale et nauséabonde draine votre chaleur corporelle (-1 PV, -1 PA).",
+            "Au milieu de cet effort titanesque, vous butez contre quelque chose de dur. En fouillant la vase, vous dégagez la moitié supérieure d'un cadavre.",
+            "L'aventurier est mort depuis longtemps, mais une sacoche en cuir semble intacte à sa ceinture. Cependant, l'eau autour de lui bouillonne étrangement..."
+        ]);
+        if (s.PV <= 0) return declareDefeat("L'épuisement des marais");
+        
+        addChoice("fouiller le cadavre", () => {
+            if (randint(1, 2) === 1) {
+                s.inventory.potions += 1; s.OR += 12;
+                addLines(["", "Vous agissez vite et arrachez la sacoche avant que quoi que ce soit ne surgisse des profondeurs.", "À l'intérieur : 12 pièces d'or et une potion de soins intacte ! Vous reprenez votre marche laborieuse vers la terre ferme."]);
+                addChoice("Continuer vers les profondeurs du marais", () => processLieu(204));
+            } else {
+                addLines(["", "Au moment où vos doigts frôlent la sacoche, la main du cadavre se referme violemment sur votre poignet !", "Un Noyé du Marais émerge de la vase dans un gargouillement morbide !"]);
+                startCombat("Le Noyé du Marais", 15, 3, () => {
+                    addLines(["", "Le cadavre maudit retourne à la fange. Vous récupérez tout de même 5 pièces d'or sur lui avant de fuir cette zone fétide."]);
+                    s.OR += 5;
+                    addChoice("Continuer vers les profondeurs du marais", () => processLieu(204));
+                });
+            }
+        });
+        addChoice("L'ignorer et presser le pas vers la terre ferme", () => {
+            addLines(["", "La prudence est mère de sûreté. Vous accélérez l'allure et finissez par atteindre un îlot de terre meuble, épuisé mais entier."]);
+            addChoice("Continuer vers les profondeurs du marais", () => processLieu(204));
+        });
+    }
+
+    function arbrePendu() {
+        addLines([
+            "", "La brume s'entrouvre pour dévoiler une clairière lugubre, dominée par un saule pleureur d'une taille colossale.",
+            "Ses branches retombent comme de longs bras squelettiques, soutenant des dizaines de cages de fer rouillé. À l'intérieur, des ossements humains cliquettent au gré du vent froid.",
+            "Au pied des racines tortueuses, un feu verdâtre crépite sous un immense chaudron en fonte.",
+            "Une créature hideuse, à mi-chemin entre la vieille femme et le batracien, touille la mixture pestilentielle. C'est l'Ermite des Tourbières.",
+            "Ses yeux laiteux se fixent sur vous. « Héhéhé... Un humain bien croquant... Tu cherches le Lac Noir, n'est-ce pas ? La route passe par moi, voyageur. »",
+            "Elle vous tend une main griffue. « Réponds à ma devinette, et je t'offrirai un baume pour survivre aux vapeurs mortelles du Cœur Putride. Échoue, et tes os rejoindront mes cages. »"
+        ]);
+        addChoice("Accepter de répondre à la devinette", () => processLieu(205));
+        addChoice("Sortir votre arme et l'attaquer sans sommation", () => processLieu(206));
+    }
+
+    function enigmeSorciere() {
+        addLines([
+            "", "La Mégère révèle des dents noircies dans un sourire malsain. Elle s'approche, l'odeur de son haleine vous donnant la nausée.",
+            "« Écoute bien, mortel... »",
+            "« Je n'ai pas de poumons, mais j'ai cruellement besoin d'air. »",
+            "« Je n'ai pas de bouche, mais l'eau me tue instantanément. »",
+            "« Qui suis-je ? »",
+            "", "(Écrivez votre réponse en majuscules)"
+        ]);
+
+        const wrapper = document.createElement('div'); wrapper.className = "input-group";
+        const inp = document.createElement('input'); inp.type = "text"; inp.placeholder = "Votre réponse...";
+        const btn = document.createElement('button'); btn.className = "btn-main"; btn.style.margin = "0"; btn.innerText = "→";
+        
+        btn.onclick = () => {
+            const v = inp.value.trim().toUpperCase();
+            clearControls();
+            if (v === "FEU" || v === "LE FEU") {
+                s.inventory.onguent = true;
+                addLines([
+                    "", "La créature pousse un cri strident, moitié de rage, moitié d'admiration.",
+                    "« Tu as le cerveau vif pour un simple sac de viande ! » crache-t-elle.",
+                    "Elle plonge sa main dans la boue et vous tend une petite fiole d'un onguent verdâtre. « Étale ça sur ton visage quand l'air deviendra poison. »",
+                    "Vous récupérez l'Onguent de la Tourbière et la contournez prudemment pour reprendre votre chemin."
+                ]);
+                addChoice("Continuer vers le Lac Noir", () => processLieu(207));
+            } else {
+                addLines([
+                    "", "La vieille femme éclate d'un rire dément qui résonne sinistrement à travers les arbres morts.",
+                    "« FAAAAUX ! » hurle-t-elle en arrachant sa cape en lambeaux, révélant un corps recouvert d'écailles sombres et des serres d'une longueur effroyable.",
+                    "« Tes os sont à moi ! »"
+                ]);
+                processLieu(206);
+            }
+        };
+        wrapper.appendChild(inp); wrapper.appendChild(btn); uiControls.appendChild(wrapper);
+    }
+
+    function combatSorciere() {
+        startCombat("La Sorcière des Tourbières", 28, 4, () => {
+            addLines([
+                "", "Dans un dernier râle agonisant, la sorcière s'effondre dans son propre chaudron qui se renverse dans un sifflement de fumée.",
+                "En fouillant sa paillasse immonde, vous trouvez 20 pièces d'or et une fiole contenant l'Onguent de la Tourbière, un baume repoussant les toxines."
+            ]);
+            s.OR += 20;
+            s.inventory.onguent = true;
+            addChoice("Continuer vers le Lac Noir", () => processLieu(207));
+        });
+    }
+
+    function lacNoir() {
+        addLines([
+            "", "Le sentier boueux débouche sur une immense nappe d'eau stagnante : le Lac Noir. Sa surface, parfaitement lisse, est d'un noir d'encre oppressant.",
+            "Il n'y a aucun bruit. La rive opposée est à peine visible à travers la brume éternelle.",
+            "Sur la berge, à moitié pourrie, se trouve une petite barque à rames. Elle est percée et attachée à un mécanisme de poulie rouillé."
+        ]);
+
+        if (s.PF >= 6) {
+            addLines(["Vos muscles saillants (Force : 6+) vous permettent d'envisager de ramer puissamment à travers le lac malgré les avaries de la barque."]);
+            addChoice("Prendre la barque en forçant sur les rames (PF élevés)", () => {
+                addLines(["", "Vous détachez la barque et commencez à ramer avec une puissance herculéenne.", "L'eau noire s'écarte sous vos coups de rames rapides. Mais à mi-chemin, l'eau se met à bouillonner frénétiquement autour de la coque !"]);
+                addChoice("Se préparer à l'impact", () => processLieu(208));
+            });
+        }
+        
+        addChoice("Tenter de nager à travers l'eau poisseuse", () => {
+            s.PV -= 3;
+            addLines([
+                "", "Vous plongez dans l'eau glaciale. La sensation est immonde, l'eau est épaisse comme de l'huile et grouille d'algues gluantes.",
+                "Soudain, à mi-chemin, un remous gigantesque se forme sous vous !",
+                "Une mâchoire monstrueuse vous attrape la jambe par surprise et vous tire vers le fond ! Vous avalez de l'eau corrompue et luttez pour remonter à la surface (-3 PV)."
+            ]);
+            if (s.PV <= 0) return declareDefeat("Le prédateur du Lac Noir");
+            addLines(["Vous parvenez à vous débattre et à atteindre un banc de vase peu profond pour faire face à la bête !"]);
+            addChoice("Affronter le monstre", () => processLieu(208));
+        });
+    }
+
+    function monstreLac() {
+        addLines(["", "L'eau explose et une créature gigantesque émerge : L'Hydre Fangeuse, une aberration croisée entre un serpent géant et un crocodile purulent !"]);
+        startCombat("L'Hydre Fangeuse", 45, 5, () => {
+            s.inventory.armor = { bonus: 12, hasIt: true };
+            addLines([
+                "", "La monstruosité s'affaisse en aspergeant la vase de son sang noir. Le combat a été titanesque.",
+                "En découpant ses écailles épaisses, vous vous confectionnez une armure rudimentaire mais incroyablement résistante (+12 PV Max équipable).",
+                "Haletant et couvert de fange, vous atteignez enfin l'autre rive du lac."
+            ]);
+            addChoice("S'enfoncer dans le Cœur Putride", () => processLieu(209));
+        });
+    }
+
+    function coeurPutride() {
+        addLines([
+            "", "Vous pénétrez maintenant dans la zone la plus ancienne et corrompue des marais : le Cœur Putride.",
+            "Ici, la brume verte n'est plus seulement aveuglante, elle est caustique. Les vapeurs qui s'échappent des crevasses brûlent vos yeux et votre gorge."
+        ]);
+
+        if (s.inventory.onguent) {
+            addLines([
+                "", "C'est le moment d'utiliser le présent de la sorcière. Vous enduisez généreusement votre visage et votre cou de l'onguent.",
+                "La substance sent atrocement fort, mais la magie opère : les gaz toxiques glissent sur vous sans vous brûler les poumons.",
+                "Vous traversez cette zone de mort asphyxiante totalement indemne !"
+            ]);
+        } else {
+            s.PV -= 4;
+            addLines([
+                "", "Vous tentez de retenir votre respiration et de courir, mais la zone est trop vaste.",
+                "Vos poumons crient au martyre. Vous êtes obligé d'inspirer, absorbant une grande rasade de gaz mortel.",
+                "Vous crachez du sang et titubez à travers le brouillard. Le poison ravage vos entrailles (-4 PV)."
+            ]);
+        }
+
+        if (s.PV <= 0) return declareDefeat("Les vapeurs caustiques du Cœur Putride");
+        addChoice("Tituber hors du nuage toxique", () => processLieu(210));
+    }
+
+    function autelOublie() {
+        addLines([
+            "", "Le brouillard commence enfin à s'éclaircir. Devant vous se dresse une structure incongrue au milieu de ce chaos végétal :",
+            "Un autel de pierre noire, parfaitement lisse, dédié à une divinité dont le nom a été effacé par le temps et la vase.",
+            "L'autel palpite d'une étrange énergie sombre. Une inscription en langue ancienne indique qu'un sacrifice de sang accordera la vigueur nécessaire pour les épreuves à venir."
+        ]);
+
+        addChoice("Faire couler votre sang sur l'autel (-2 PV) pour un bonus de Force (+2 PF)", () => {
+            s.PV -= 2; s.PF += 2;
+            addLines([
+                "", "Vous entaillez votre paume avec votre lame et pressez votre main contre la pierre froide.",
+                "Le sang est absorbé par l'autel en un instant. Une onde de puissance brute et ténébreuse envahit vos muscles (-2 PV, +2 PF)."
+            ]);
+            if (s.PV <= 0) return declareDefeat("L'hémorragie rituelle");
+            addChoice("Reprendre la route", () => processLieu(211));
+        });
+        
+        addChoice("Faire couler votre sang sur l'autel (-2 PV) pour un bonus d'Agilité (+2 PA Max)", () => {
+            s.PV -= 2; s.maxPA += 2; s.PA += 2;
+            addLines([
+                "", "Vous entaillez votre paume avec votre lame et pressez votre main contre la pierre froide.",
+                "Le sang est absorbé par l'autel en un instant. Vos sens s'aiguisent de façon surnaturelle, vous vous sentez léger comme le vent (-2 PV, +2 PA Max)."
+            ]);
+            if (s.PV <= 0) return declareDefeat("L'hémorragie rituelle");
+            addChoice("Reprendre la route", () => processLieu(211));
+        });
+
+        addChoice("Ignorer cette sorcellerie impie et poursuivre", () => {
+            addLines(["", "Vous vous détournez de cet autel maudit. Votre âme vous appartient, et votre force vous vient de votre propre courage."]);
+            addChoice("Reprendre la route", () => processLieu(211));
+        });
+    }
+
+    function sortieMarecage() {
+        addLines([
+            "", "────────────────────────────────────────────────────────────────────────────────",
+            "Le sol spongieux sous vos bottes laisse soudainement place à de la roche dure et coupante.",
+            "La brume, comme repoussée par une force invisible, se dissipe totalement dans votre dos.",
+            "Vous vous tenez au bord d'un gouffre abyssal, d'où s'élèvent des lueurs rougeoyantes.",
+            "De l'autre côté du précipice, dominant un paysage de désolation volcanique, s'élève une forteresse titanesque en obsidienne pure.",
+            "Des éclairs pourpres déchirent le ciel charbonneux au-dessus de la plus haute tour.",
+            "",
+            "Vous avez survécu aux Marécages Putrides. Le domaine du Mage Noir se dresse enfin devant vous.",
+            "L'heure de la vengeance est proche.",
             "────────────────────────────────────────────────────────────────────────────────"
         ]);
         s.isPlaying = false;
+        
         const btn = document.createElement('button');
-        btn.className = "btn-main"; btn.innerText = "REJOUER"; btn.onclick = startGame;
+        btn.className = "btn-main"; btn.innerText = "A SUIVRE - REJOUER";
+        btn.onclick = startGame;
         uiControls.appendChild(btn);
     }
 </script>
