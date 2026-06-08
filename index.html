@@ -92,10 +92,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            min-height: 120px;
-            max-height: 45vh;
-            overflow-y: auto;
-            flex-shrink: 0;
+            margin-top: 14px;
             padding-bottom: 10px;
         }
 
@@ -193,19 +190,22 @@
     <h1>LA QUÊTE DU MAGE NOIR</h1>
     <div id="stats-bar"></div>
     <div id="log-container">
-        <div style="text-align:center; margin-top: 50px;">
-            <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:18px; color:#c0a870;">
-                Votre famille a été décimée par le Mage Noir.<br>La vengeance vous attend...<br>Si vous en avez le courage.
-            </p>
-            <button class="btn-main" onclick="startGame()">COMMENCER</button>
+        <div id="log-text">
+            <div style="text-align:center; margin-top: 50px;">
+                <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:18px; color:#c0a870;">
+                    Votre family a été décimée par le Mage Noir.<br>La vengeance vous attend...<br>Si vous en avez le courage.
+                </p>
+                <button class="btn-main" onclick="startGame()">COMMENCER</button>
+            </div>
         </div>
+        <div id="controls"></div>
     </div>
-    <div id="controls"></div>
 </div>
 
 <script>
     let s = {};
     const uiLog = document.getElementById('log-container');
+    const uiLogText = document.getElementById('log-text');
     const uiControls = document.getElementById('controls');
     const uiStats = document.getElementById('stats-bar');
 
@@ -236,7 +236,7 @@
 
     function printLine(text) {
         if (text === "") {
-            uiLog.appendChild(document.createElement('br'));
+            uiLogText.appendChild(document.createElement('br'));
             return;
         }
         const div = document.createElement('div');
@@ -250,11 +250,22 @@
         else if (text.includes("vous a porté") || text.includes("succombez") || text.includes("douleur") || text.includes("griffes") || text.includes("s'enfoncent")) div.classList.add("log-hit");
         
         div.innerHTML = text;
-        uiLog.appendChild(div);
-        uiLog.scrollTop = uiLog.scrollHeight;
+        uiLogText.appendChild(div);
     }
 
-    function addLines(lines) { lines.forEach(printLine); updateStats(); }
+    function addLines(lines) { 
+        if (lines.length === 0) return;
+        const anchor = document.createElement('div');
+        uiLogText.appendChild(anchor);
+        
+        lines.forEach(printLine); 
+        updateStats(); 
+        
+        setTimeout(() => {
+            anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 40);
+    }
+    
     function clearControls() { uiControls.innerHTML = ""; }
 
     function addChoice(label, onClick, styleClass = "btn-choice") {
@@ -270,6 +281,11 @@
             isPlaying: true, PV: 20, maxPV: 20, PA: 10, maxPA: 10, PF: 3, EXP: 0, OR: 5,
             lieu: 1, b: 0, g: 1, dunes: 2, corde: true, hasBache: false,
             equippedArmorBonus: 0,
+            montagneFaite: false,
+            gobelinFait: false,
+            banditsFait: false,
+            foretFaite: false,
+            foretEtape: 0,
             inventory: {
                 sword: { damage: 2, poisoned: false, hasIt: true, sacred: false },
                 axe: { damage: 0, poisoned: false, hasIt: false },
@@ -284,7 +300,8 @@
             },
             combat: null
         };
-        uiLog.innerHTML = "";
+        uiLogText.innerHTML = "";
+        clearControls();
         
         addLines([
             "────────────────────────────────────────────────────────────────────────────────",
@@ -317,6 +334,7 @@
             
             const wrapper = document.createElement('div');
             wrapper.style.display = "flex"; wrapper.style.gap = "8px";
+            wrapper.style.marginTop = "10px";
             
             const btnPV = document.createElement('button'); btnPV.className = "btn-lvl"; btnPV.innerText = "+1 PV Max";
             btnPV.onclick = () => { s.maxPV += 1; s.PV += 1; addLines(["Vos PV Max augmentent de 1 !"]); clearControls(); checkLevelUp(nextAction); };
@@ -389,7 +407,6 @@
             else if (lieu === 144) brasDeFer();
             else if (lieu === 150) nuit();
             else if (lieu === 200) quitterVille();
-            // Nouveaux lieux - Marécages
             else if (lieu === 201) entreeMarecage();
             else if (lieu === 202) cheminPlanches();
             else if (lieu === 203) vaseEpaisse();
@@ -473,23 +490,23 @@
                 return;
             }
             const roll = randint(1, 3);
+            let cb = c.onWin;
             if (roll === 1) {
-                addLines(["", "Vous saisissez une fraction de seconde d'inattention de votre adversaire.", `Grâce à votre agilité foudroyante, vous vous éclipsez dans l'obscurité avant que ${c.name} ne réagisse.`, "Vous avez survécu, mais à quel prix ?", "Retenez ceci : un vrai guerrier ne fuit jamais face à l'adversité."]);
+                addLines(["", "Vous saisissez une fraction de seconde d'inattention de votre adversaire.", `Grâce à votre agilité foudroyante, vous vous éclipsez dans l'obscurité avant que ${c.name} ne réagisse.`]);
                 s.combat = null;
-                addChoice("Continuer votre route", () => processLieu(s.lieu));
+                checkLevelUp(() => cb());
             } else if (roll === 2) {
                 s.PV -= c.da;
                 addLines(["", `${c.name} vous a porté une attaque dans votre dos au moment de fuir (-${c.da} PV).`, "Vous avez survécu, mais à quel prix ?", "Retenez ceci : un vrai guerrier ne fuit jamais face à l'adversité."]);
                 s.combat = null;
                 if (s.PV <= 0) return declareDefeat(c.name);
-                addChoice("Continuer votre route", () => processLieu(s.lieu));
+                addChoice("Continuer votre route", () => checkLevelUp(() => cb()));
             } else {
                 s.PV -= 2 * c.da;
-                addLines(["", `En tentant de fuir, vous trébuchez et ${c.name} en profite pour vous porter une série de coups dévastateurs (-${2 * c.da} PV).`]);
+                addLines(["", `En tentant de fuir, vous trébuchez et ${c.name} en profite pour vous porter une série de coups dévastateurs (-${2 * c.da} PV).`, "Vous avez survécu de justesse, mais dans un état pitoyable.", "Retenez ceci : un vrai guerrier ne fuit jamais face à l'adversité."]);
                 if (s.PV <= 0) return declareDefeat(c.name);
                 s.combat = null;
-                addLines(["", "Vous avez survécu de justesse, mais dans un état pitoyable.", "Retenez ceci : un vrai guerrier ne fuit jamais face à l'adversité."]);
-                addChoice("Continuer votre route", () => processLieu(s.lieu));
+                addChoice("Continuer votre route", () => checkLevelUp(() => cb()));
             }
         }, "btn-action");
     }
@@ -509,7 +526,6 @@
                 s.PV = Math.min(s.PV + 1, s.maxPV);
                 addLines(["La dague magique absorbe l'énergie vitale ennemie : +1 PV !"]);
             }
-            // Épée sacrée : bonus EXP direct à chaque coup réussi (1/3 de chance)
             if (weaponKey === "sword" && w.sacred && randint(1, 3) === 1) {
                 s.EXP += 1;
                 s.combat.roundExp += 1;
@@ -518,7 +534,6 @@
         } else {
             addLines(["", "Vous avez raté votre attaque."]);
         }
-        // Accumulation d'EXP cachée par round
         s.EXP += 1;
         s.combat.roundExp += 1;
         
@@ -534,7 +549,7 @@
         
         if (c.pva <= 0) {
             addLines(["", "────────────────────────────────────────────────────────────────────────────────", "Félicitations, valeureux guerrier.", "Vous avez vaincu l'adversité avec force et courage."]);
-            s.EXP += 1; // Bonus de victoire
+            s.EXP += 1; 
             addLines([`[ Total d'expérience remportée pour ce combat : ${c.roundExp + 1} EXP ]`, "────────────────────────────────────────────────────────────────────────────────"]);
             let cb = c.onWin;
             let isArene = c.isArene;
@@ -603,18 +618,21 @@
 
     // --- LIEUX ---
     function montagne() {
-        s.b += 3;
         addLines(["", "Vous commencez à grimper laborieusement. La fatigue commence à se faire sentir.", "Vous apercevez finalement une caverne au loin."]);
         addChoice("Aller à la caverne pour passer la nuit", () => processLieu(4));
-        addChoice("Passer votre chemin et continuez l'ascension", () => processLieu(7));
+        addChoice("Passer votre chemin et continuez l'ascension", () => { s.montagneFaite = true; processLieu(7); });
     }
 
     function foret() {
         s.PV -= 1;
         addLines(["", "Vous vous enfoncez petit à petit à travers l'épaisse végétation sombre et humide.", "Après avoir marché 3 heures au milieu des moustiques assoiffés de sang et trébuché à travers d'innombrables racines (-1 PV),", "vous n'avez plus qu'une idée en tête : sortir de cette jungle oppressante.", "Vous arrivez à un croisement."]);
         if (s.PV <= 0) return declareDefeat(null);
-        addChoice("Tourner à droite sur une belle route entretenue", () => processLieu(11));
-        addChoice("Tourner à gauche en direction d'un sombre sentier de boue", () => processLieu(12));
+        addChoice("Tourner à droite sur une belle route entretenue", () => {
+            processLieu(11);
+        });
+        addChoice("Tourner à gauche en direction d'un sombre sentier de boue", () => {
+            processLieu(12);
+        });
     }
 
     function caverne() {
@@ -648,7 +666,7 @@
         addLines(["", "Avec la fourrure de l'ours, vous fabriquez une armure qui vous rapportera 4 PV Max si vous l'équipez lors d'un combat.", "Vous vous reposez dignement après cet affrontement.", "Le lendemain matin, vous reprenez votre chemin, revigoré par ce sommeil amplement mérité.", "Après de longues heures d'effort, vous arrivez enfin au sommet de la montagne. Le vent frais du Nord fouette votre visage.", "Cependant, vous sentez votre ventre gargouiller. Vous n'avez plus une minute à perdre, il faut vous mettre en quête de nourriture."]);
         addChoice("Aller à la chasse aux marmottes à l'aide de pièges", () => processLieu(9));
         addChoice("Aller à la pêche dans le lac", () => processLieu(10));
-        addChoice("Prendre une large route dégagée allant tout droit", () => processLieu(19));
+        addChoice("Prendre une large route dégagée allant tout droit", () => { s.montagneFaite = true; processLieu(19); });
         addChoice("Emprunter le passage escarpé vers le sommet", () => processLieu(161));
     }
 
@@ -657,16 +675,16 @@
         addLines(["", "Vous reprenez votre chemin. La pause attendra.", "Après de longues heures d'effort, vous arrivez enfin au sommet de la montagne. Le vent frais du Nord fouette votre visage.", "Épuisé, vous vous écroulez au sol et la fatigue accumulée vous fait perdre connaissance (-2 PA).", "Lorsque vous ouvrez les yeux, le soleil est déjà haut dans le ciel.", "Cependant, vous sentez votre ventre gargouiller. Vous n'avez plus une minute à perdre, il faut vous mettre en quête de nourriture."]);
         addChoice("Aller à la chasse aux marmottes à l'aide de pièges", () => processLieu(9));
         addChoice("Aller à la pêche dans le lac", () => processLieu(10));
-        addChoice("Prendre une large route dégagée allant tout droit", () => processLieu(19));
+        addChoice("Prendre une large route dégagée allant tout droit", () => { s.montagneFaite = true; processLieu(19); });
         addChoice("Emprunter le passage escarpé vers le sommet", () => processLieu(161));
     }
 
     function chasser() {
         s.PV -= 1; s.PA = Math.max(1, s.PA - 1);
-        addLines(["", "Vous installez des pièges à des endroits judicieux. Cependant 2 heures plus tard les pièges sont toujours vides.", "Vous réalisez alors que vous êtes stupide : les marmottes hibernent en hivers. Quel piètre chasseur vous faîtes !", "Vous décidez donc d'aller pêcher sur le lac, malgré votre ventre souffrant (-1 PV et -1 PA).", "Vous apercevez progressivement les plages de cailloux et la surface étincelante.", "Vous réalisez alors que le lac est entièrement recouvert d'une épaisse couche de glace."]);
+        addLines(["", "Vous installez des pièges à des endroits judicieux. Cependant 2 heures plus tard les pièges sont toujours vides.", "Vous réalisez alors que vous êtes stupide : les marmottes hibernent en hiver. Quel piètre chasseur vous faites !", "Vous décidez donc d'aller pêcher sur le lac, malgré votre ventre souffrant (-1 PV et -1 PA).", "Vous apercevez progressivement les plages de cailloux et la surface étincelante.", "Vous réalisez alors que le lac est entièrement recouvert d'une épaisse couche de glace."]);
         if (s.PV <= 0) return declareDefeat(null);
         addChoice("Continuer vers le lac", () => processLieu(16));
-        addChoice("Prendre une large route dégagée allant tout droit", () => processLieu(19));
+        addChoice("Prendre une large route dégagée allant tout droit", () => { s.montagneFaite = true; processLieu(19); });
         addChoice("Emprunter le passage escarpé vers le sommet", () => processLieu(161));
     }
 
@@ -674,22 +692,21 @@
         addLines(["", "Vous vous dirigez vers le lac. Vous apercevez progressivement ses plages de cailloux et sa surface étincelante.", "Vous réalisez alors que cette dernière est entièrement recouverte d'une épaisse couche de glace."]);
         addChoice("Continuer vers le lac", () => processLieu(16));
         addChoice("Aller à la chasse aux marmottes", () => processLieu(9));
-        addChoice("Prendre une large route dégagée allant tout droit", () => processLieu(19));
+        addChoice("Prendre une large route dégagée allant tout droit", () => { s.montagneFaite = true; processLieu(19); });
         addChoice("Emprunter le passage escarpé vers le sommet", () => processLieu(161));
     }
 
     function foretGauche() {
-        s.b += 1;
-        addLines(["", "Vous avancez vaillamment dans cette direction, le coup baigné d'une chaleur timide.", "Au bout de quelques kilomètres, une petite créature s'approche docilement de vous. Elle semble vous observer."]);
+        addLines(["", "Vous avancez vaillamment dans cette direction, le cou baigné d'une chaleur timide.", "Au bout de quelques kilomètres, une petite créature s'approche docilement de vous. Elle semble vous observer."]);
         addChoice("Tirer votre arme pour l'attaquer", () => processLieu(13));
         addChoice("Tenter d'établir la communication avec cette créature", () => processLieu(14));
-        addChoice("Continuer votre chemin", () => processLieu(15));
+        addChoice("Continuer votre chemin", () => suiteForetApresDealer());
     }
 
     function combatGobelin() {
         s.g = 0;
         addLines(["", "Vous sortez votre épée de son étui, et armez votre bras afin de lui porter un coup fatal.", "Mais le gobelin, au moment même où la lame allait le trancher en deux, esquive habilement l'arme et détale dans la forêt en ricanant.", "Vous êtes surpris par cette réaction inattendue, mais reprenez vos esprits et décidez d'aller de l'avant."]);
-        if (s.b === 1 || s.b === 4) addChoice("Continuer", () => processLieu(15)); else addChoice("Continuer", () => processLieu(19));
+        addChoice("Continuer", () => suiteForetApresDealer());
     }
 
     function dealChampignons() {
@@ -701,18 +718,27 @@
                     addLines(["", "Le gobelin s'en va, déçu de ne pas avoir pu commercer avec vous et vous extorquer quelques pièces.", "Vous êtes surpris par cette rencontre inattendue, mais reprenez vos esprits et décidez d'aller de l'avant."]);
                 } else if (i * 2 > s.OR) {
                     s.OR = 0; s.g = 0;
-                    addLines(["", "Le gobelin s'insurge : \"Vous avez tenté de m'arnaquer, jeune humain pitoyable. Vous le regretterez ...\"", "Il s'enfuit alors dans la broussaille. Alors vous reprenez votre chemin, un détail attire votre attention : votre bourse est bien plus légère que d'habitude.", "Vous portez alors la main à votre ceinture, et réalisez qu'elle a été malicieusement subtilisé par cet effronté de gobelin.", "Cependant, la vengeance attendra, d'autant plus que le Soleil commence à se coucher derrière la cime des arbres feuillus.", "Vous reprenez alors votre chemin, encore plus pauvre et démuni que vous l'étiez auparavant."]);
+                    addLines(["", "Le gobelin s'insurge : \"Vous avez tenté de m'arnaquer, jeune humain pitoyable. Vous le regretterez ...\"", "Il s'enfuit alors dans la broussaille. Alors vous reprenez votre chemin, un détail attire votre attention : votre bourse est bien plus légère que d'habitude.", "Vous portez alors la main à votre ceinture, et réalisez qu'elle a été malicieusement subtilisée par cet effronté de gobelin.", "Cependant, la vengeance attendra, d'autant plus que le Soleil commence à se coucher derrière la cime des arbres feuillus.", "Vous reprenez alors votre chemin, encore plus pauvre et démuni que vous l'étiez auparavant."]);
                 } else {
                     s.inventory.mushrooms += i; s.OR -= i * 2; s.g = 2;
                     addLines(["", "Le gobelin s'en va en sifflotant, ravi de vous avoir extorqué quelques pièces.", "Vous êtes surpris par cette rencontre inattendue, mais reprenez vos esprits et décidez d'aller de l'avant."]);
                 }
-                if (s.b === 1 || s.b === 4) addChoice("Continuer", () => processLieu(15)); else addChoice("Continuer", () => processLieu(19));
+                addChoice("Continuer", () => suiteForetApresDealer());
             });
         }
     }
 
+    function suiteForetApresDealer() {
+        s.gobelinFait = true;
+        if (!s.banditsFait) {
+            processLieu(11);
+        } else {
+            s.foretFaite = true;
+            processLieu(19);
+        }
+    }
+
     function bandits() {
-        s.b += 1;
         addLines(["", "Vous continuez votre chemin dans cette direction, et le sentier s'élargit.", "Vous avancez, réjoui de pouvoir enfin progresser sans trébucher ni vous faire fouetter par les basses branches.", "Cependant, cette paix intérieure ne dura pas longtemps : le chemin se rétrécit à quelques mètres de vous.", "Vous vous arrêtez, hésitant, lorsqu'un groupe de 3 bandits vous saute brusquement dessus !"]);
 
         const roll = randint(1, 20);
@@ -729,18 +755,25 @@
             const gold = randint(3, 5);
             s.OR += gold; s.inventory.axe = { damage: 4, poisoned: false, hasIt: true };
             addLines(["", `En fouillant les cadavres des malfaiteurs, vous trouvez ${gold} pièces d'or, ainsi qu'une hache de bûcheron, infligeant -4 PV.`, "Cette arme étant difficile à manier, une attaque à la hache est moins précise qu'une attaque à l'épée.", "Vous poursuivez votre quête en choisissant finalement de maintenir le cap."]);
-            if (s.b === 1 || s.b === 4) addChoice("Continuer", () => processLieu(12)); else addChoice("Continuer", () => processLieu(19));
+            
+            s.banditsFait = true;
+            if (!s.gobelinFait) {
+                addChoice("Continuer", () => processLieu(12));
+            } else {
+                s.foretFaite = true;
+                addChoice("Continuer", () => processLieu(19));
+            }
         });
     }
 
     function lac() {
         s.PV = Math.min(s.PV + 2, s.maxPV);
-        addLines(["", "Vous décidez de ramasser un caillou, ainsi qu'un bâton et quelques insectes qui vous serviront d'appâts.", "Avec le bâton et votre corde, vous confectionnez une canne à pêche, au bout de laquelle vous attachez les insectes et verres de terre.", "Vous brisez la glace avec le caillou, et commencez à attendre patiemment que quelque chose morde.", "Au bout d'une demi-heure, vous avez attrapé 2 poissons, vous offrant la certitude d'un repas consistant (+2 PV)."]);
+        addLines(["", "Vous décidez de ramasser un caillou, ainsi qu'un bâton et quelques insectes qui vous serviront d'appâts.", "Avec le bâton et votre corde, vous confectionnez une canne à pêche, au bout de laquelle vous attachez les insectes et vers de terre.", "Vous brisez la glace avec le caillou, et commencez à attendre patiemment que quelque chose morde.", "Au bout d'une demi-heure, vous avez attrapé 2 poissons, vous offrant la certitude d'un repas consistant (+2 PV)."]);
         if (randint(1, 5) === 1) {
             s.inventory.sword = { damage: 5, poisoned: false, hasIt: true, sacred: true };
             addLines(["", "Alors que vous vous apprêtez à remonter votre canne pour la dernière fois, vous sentez que le fil tend de manière inhabituelle.", "Vous réalisez alors que l'objet que vous avez remonté est une épée sacrée, infligeant -5 PV.", "Cette lame bénie octroie un bonus d'expérience à chaque coup réussi (1 chance sur 3).", "Vous la rangez dans votre fourreau et lancez votre ancienne lame au loin."]);
         }
-        addChoice("Prendre une large route dégagée allant tout droit", () => processLieu(19));
+        addChoice("Prendre une large route dégagée allant tout droit", () => { s.montagneFaite = true; processLieu(19); });
         addChoice("Emprunter le passage escarpé vers le sommet", () => processLieu(161));
     }
 
@@ -755,12 +788,12 @@
             addLines(["", "Vous n'êtes pas assez rapide. Un rocher vous heurte violemment l'épaule, et vous trébuchez dans la poussière (-1 PV, -1 PA)."]);
             if (s.PV <= 0) return declareDefeat("L'éboulement");
             addChoice("Continuer l'ascension (vers le temple)", () => processLieu(17));
-            addChoice("Rebrousser chemin et prendre la route dégagée", () => processLieu(19));
+            addChoice("Rebrousser chemin et prendre la route dégagée", () => { s.montagneFaite = true; processLieu(19); });
         }
     }
 
     function temple() {
-        addLines(["", "Toujours avec la même volonté, vous poursuivez votre route à travers un sentier escarpé.", "Epuisé, mais déterminé, vous marchez à travers la montagne, et les nuages commencent à se dissiper dans le ciel.", "Malgré le fait que votre priorité capitale reste la survie, vous avez la certitude que ni la fatigue, ni les blessures ne vous arrêteront.", "Pressant le pas, vous finissez par apercevoir au loin une maison, promesse d'un bon repas et d'un sommeil confortable.", "Le bâtiment se révèle être une sorte de dôme doré. Vous vous approchez, en cherchant un quelconque moyen d'y pénétrer.", "En tournant autour de l'étrange bâtiment, vous trouvez enfin la porte d'entrée, bloquée par un système de sécurité requérant un mot de passe.", "", "Quel est ce mot de passe (en lettres majuscules) ?"]);
+        addLines(["", "Toujours avec la même volonté, vous poursuivez votre route à travers un sentier escarpé.", "Épuisé, mais déterminé, vous marchez à travers la montagne, et les nuages commencent à se dissiper dans le ciel.", "Malgré le fait que votre priorité capitale reste la survie, vous avez la certitude que ni la fatigue, ni les blessures ne vous arrêteront.", "Pressant le pas, vous finissez par apercevoir au loin une maison, promesse d'un bon repas et d'un sommeil confortable.", "Le bâtiment se révèle être une sorte de dôme doré. Vous vous approchez, en cherchant un quelconque moyen d'y pénétrer.", "En tournant autour de l'étrange bâtiment, vous trouvez enfin la porte d'entrée, bloquée par un système de sécurité requérant un mot de passe.", "", "Quel est ce mot de passe (en lettres majuscules) ?"]);
         
         const wrapper = document.createElement('div'); wrapper.className = "input-group";
         const inp = document.createElement('input'); inp.type = "text"; inp.placeholder = "Mot de passe...";
@@ -770,34 +803,32 @@
             clearControls();
             if (v === "TEMPLE") {
                 s.PV = Math.min(s.PV + 3, s.maxPV); s.PA = Math.min(s.PA + 3, s.maxPA); s.EXP += 12;
-                addLines(["", "La porte s'ouvre dans un grincement, faisant apparaître un couloir faiblement éclairé.", "Vous entrez à l'intérieur de l'édifice, et traversez le long couloir.", "Il dessert une immense salle, au milieu de laquelle trône une table imposante.", "Vos yeux se mettent à briller : des plats et des mets délicieux s'étalent à foison, tous plus appétissants les uns que les autres.", "Vous vous faîtes un copieux festin, vous permettant de recharger vos points (+ 3PV et +3 PA).", "Une fois le repas terminé, et après vous être reposé, vous sortez d'ici, le cœur joyeux et le ventre plein."]);
+                addLines(["", "La porte s'ouvre dans un grincement, faisant apparaître un couloir faiblement éclairé.", "Vous entrez à l'intérieur de l'édifice, et traversez le long couloir.", "Il dessert une immense salle, au milieu de laquelle trône une table imposante.", "Vos yeux se mettent à briller : des plats et des mets délicieux s'étalent à foison, tous plus appétissants les uns que les autres.", "Vous vous faites un copieux festin, vous permettant de recharger vos points (+ 3PV et +3 PA).", "Une fois le repas terminé, et après vous être reposé, vous sortez d'ici, le cœur joyeux et le ventre plein."]);
             } else {
                 addLines(["", "Malheureusement, la porte reste fermée.", "Vous vous éloignez, déçu de n'avoir pu trouver refuge dans cet étrange bâtiment."]);
             }
-            addChoice("Continuer", () => processLieu(19));
+            addChoice("Continuer", () => { s.montagneFaite = true; processLieu(19); });
         };
         wrapper.appendChild(inp); wrapper.appendChild(btn); uiControls.appendChild(wrapper);
     }
 
     function transition() {
-        if (s.b === 2) {
-            addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Vous voilà sorti de cet enfer.", "Cependant, un large fleuve vous contraint à aller vers le Nord.", "Le dénivelé s'élève petit à petit, et progressivement, les plaines enneigées s'étalent sous vos yeux.", "Vous n'avez d'autres choix que de poursuivre par là votre mission."]);
-            addChoice("Continuer", () => processLieu(2));
-        } else if (s.b === 3) {
-            addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Vous voilà sorti de cet enfer.", "Cependant, un large fleuve vous contraint à aller vers l'Est.", "Le dénivelé descend petit à petit, et progressivement, les plaines enneigées laissent place à une végétation dense.", "Vous n'avez d'autres choix que de poursuivre par là votre mission."]);
-            addChoice("Continuer", () => processLieu(3));
-        } else if (s.b === 5) {
-            addLines(["", "Jusqu'ici, vous avez survécu et parez le danger. Restez tout de même sur vos gardes et ne vous reposez pas sur vos lauriers.", "Au fur et à mesure que vous avancez, les arbres se raréfient, au profit de la terre desséchée et du sable.", "Vous réalisez alors que vous allez devoir poursuivre votre aventure à travers le tristement célèbre désert de la mort.", "Au creux d'un amas rocheux, vous trouvez une bâche.", "Cependant, n'ayant toujours pas de sac pour transporter vos affaires, vous ne pouvez emporter qu'un seul objet entre votre corde et cette bâche."]);
+        if (s.montagneFaite && s.gobelinFait && s.banditsFait) {
+            addLines(["", "Jusqu'ici, vous avez survécu et paré le danger. Restez tout de même sur vos gardes et ne vous reposez pas sur vos lauriers.", "Au fur et à mesure que vous avancez, les arbres se raréfient, au profit de la terre desséchée et du sable.", "Vous réalisez alors que vous allez devoir poursuivre votre aventure à travers le tristement célèbre désert de la mort.", "Au creux d'un amas rocheux, vous trouvez une bâche.", "Cependant, n'ayant toujours pas de sac pour transporter vos affaires, vous ne pouvez emporter qu'un seul objet entre votre corde et cette bâche."]);
             addChoice("Garder la corde", () => processLieu(20));
             addChoice("Prendre la bâche", () => processLieu(21));
-        } else {
-            processLieu(20);
+        } else if (s.montagneFaite && (!s.gobelinFait || !s.banditsFait)) {
+            addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Vous voilà sorti de cet enfer.", "Cependant, un large fleuve vous contraint à aller vers l'Est.", "Le dénivelé descend petit à petit, et progressivement, les plaines enneigées laissent place à une végétation dense.", "Vous n'avez d'autres choix que de poursuivre par là votre mission."]);
+            addChoice("Continuer", () => processLieu(3));
+        } else if ((s.gobelinFait && s.banditsFait) && !s.montagneFaite) {
+            addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Vous voilà sorti de cet enfer.", "Cependant, un large fleuve vous contraint à aller vers le Nord.", "Le dénivelé s'élève petit à petit, et progressivement, les plaines enneigées s'étalent sous vos yeux.", "Vous n'avez d'autres choix que de poursuivre par là votre mission."]);
+            addChoice("Continuer", () => processLieu(2));
         }
     }
 
     function desert() {
         if (s.lieu === 21) { s.corde = false; s.hasBache = true; }
-        addLines(["", "Après avoir fait ce choix crucial pour le reste de votre aventure, vous poursuivez votre quête avec détermination.", "La chaleur commence à se faire sentir, et toute trace de vie disparaît, vous laissant seul avec votre destin.", "Au loin devant vous s'étalent les dunes à perte de vue. Cette direction sera le chemin le plus court, mais surtout le plus risqué.", "Un sentier délimité, effacé par le vent et les années, continue sur votre droite.", "Si vous passez par là, vous limitez les dangers, mais risquez de perdre beaucoup de temps."]);
+        addLines(["", "Après avoir fait ce choix crucial pour le reste de votre aventure, vous poursuivez votre quête avec détermination.", "La chaleur commences à se faire sentir, et toute trace de vie disparaît, vous laissant seul avec votre destin.", "Au loin devant vous s'étalent les dunes à perte de vue. Cette direction sera le chemin le plus court, mais surtout le plus risqué.", "Un sentier délimité, effacé par le vent et les années, continue sur votre droite.", "Si vous passez par là, vous limitez les dangers, mais risquez de perdre beaucoup de temps."]);
         addChoice("Continuer tout droit vers les dunes", () => processLieu(22));
         addChoice("Continuer à droite vers le sentier", () => processLieu(23));
     }
@@ -805,16 +836,16 @@
     function nomade() {
         if (s.lieu === 23) s.dunes += 1;
         s.PV -= 1;
-        addLines(["", "Ainsi vous avancez dans cette direction, malgré la chaleur qui s'intensifie.", "Après quelques heures de marche étouffantes (- 1PV), vous faîtes la rencontre d'un nomade du désert à dos de dromadaire, faiblement armé."]);
+        addLines(["", "Ainsi vous avancez dans cette direction, malgré la chaleur qui s'intensifie.", "Après quelques heures de marche étouffantes (- 1PV), vous faites la rencontre d'un nomade du désert à dos de dromadaire, faiblement armé."]);
         if (s.PV <= 0) return declareDefeat(null);
         addChoice("Sortir votre arme et combattre", () => processLieu(24));
-        addChoice("Etablir la communication", () => processLieu(25));
+        addChoice("Établir la communication", () => processLieu(25));
     }
 
     function combatNomade() {
         startCombat("Le nomade", 6, 1, () => {
             s.OR += 1; s.PV -= 3;
-            addLines(["", "Cependant, cet homme du désert représentait une proie facile.", "En fouillant son cadavre, vous trouvez 1 pièce d'or, ainsi qu'une bouteille d'eau dont le contenu s'est malheureusement déversé dans le sable.", "Il aurait été plus judicieux de ne pas attaquer l'homme aussi vite, car les effets de la déshydratation commencent à se faire sentir (-2 PV).", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profitez d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
+            addLines(["", "Cependant, cet homme du désert représentait une proie facile.", "En fouillant son cadavre, vous trouvez 1 pièce d'or, ainsi qu'une bouteille d'eau dont le contenu s'est malheureusement déversé dans le sable.", "Il aurait été plus judicieux de ne pas attaquer l'homme aussi vite, car les effets de la déshydratation commencent à se faire sentir (-2 PV).", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profiter d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
             testChuteDromadaire();
         });
     }
@@ -822,7 +853,7 @@
     function echangeNomade() {
         s.PV -= 1;
         s.PV = Math.min(s.PV + 2, s.maxPV);
-        addLines(["", "Vous vous approchez de l'homme du désert en lui faisant des signes de main.", "Le vagabond, visiblement content d'avoir un contact humain, vous confie une bouteille d'eau.", "Vous buvez goulûment son contenu, ravi d'avoir pu éviter la déshydratation jusqu'ici. (+2 PV)", "L'homme vous offre également son dromadaire, et vous acceptez ce présent avec de chaleureux remerciements.", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profitez d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
+        addLines(["", "Vous vous approchez de l'homme du désert en lui faisant des signes de main.", "Le vagabond, visiblement content d'avoir un contact humain, vous confie une bouteille d'eau.", "Vous buvez goulûment son contenu, ravi d'avoir pu éviter la déshydratation jusqu'ici. (+2 PV)", "L'homme vous offre également son dromadaire, et vous acceptez ce présent avec de chaleureux remerciements.", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profiter d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
         testChuteDromadaire();
     }
 
@@ -841,7 +872,7 @@
     function scorpion() {
         startCombat("Le scorpion mutant", s.dunes * 6, s.dunes, () => {
             s.inventory.poison = 2;
-            addLines(["", "Vous récupérez le venin de la créature dans la gourde du nomade, remontez sur le dos de votre dromadaire et reprenez votre chemin.", "Si vous imbibez une de vos armes de ce venin lors d'un combat, l'attaque empoisonnera votre adversaire, lui infligeant -1 PV par tour jusqu'à sa mort.", "Le poison reste éternellement sur votre arme jusqu'à ce que vous la remplacez.", "La dose que vous avez récupérée vous permettra d'imbiber deux de vos armes."]);
+            addLines(["", "Vous récupérez le venin de la créature dans la gourde du nomade, remontez sur le dos de votre dromadaire et reprenez votre chemin.", "Si vous imbibez une de vos armes de ce venin lors d'un combat, l'attaque empoisonnera votre adversaire, lui infligeant -1 PV par tour jusqu'à sa mort.", "Le poison reste éternellement sur votre arme jusqu'à ce que vous la remplaciez.", "La dose que vous avez récupérée vous permettra d'imbiber deux de vos armes."]);
             if (s.dunes === 2) { addLines(["", "Cependant, le trajet commence à s'éterniser, et impossible de mettre la main sur une quelconque source de nourriture (-2 PV)."]); s.PV -= 2; }
             if (s.PV <= 0) return declareDefeat(null);
             addLines(["", "Ce périple n'est décidément pas de tout repos ! Alors que, blessé, vous continuez d'avancer, vous apercevez un oasis au milieu des dunes."]);
@@ -908,7 +939,7 @@
 
     function arriveeKairMorten() {
         addLines(["", "────────────────────────────────────────────────────────────────────────────────", "Enfin !!! Vous voilà arrivé à KAIR MORTEN, la dernière cité humaine avant les terres hostiles,", "peuplées de terrifiantes créatures.", "Au-delà de ses murs, vous ne rencontrerez plus que de vils monstres, barbares et assoiffés de sang.", "Mais ce n'est pas le moment de reculer, votre ennemi se renforce de jour en jour et le temps presse.", "Cependant, vous êtes faible et vous en avez conscience : il faut vous préparer un minimum", "car dans votre état actuel, vous n'êtes qu'un vulgaire moucheron.", "Heureusement pour vous, KAIR MORTEN est l'endroit idéal pour ça.", "En effet, étant la porte vers les terres hostiles, cette ville est le repaire des aventuriers", "ou chasseurs de primes en tout genre qui n'hésitent pas à mettre leur vie en jeu pour gagner de l'argent.", "C'est l'opportunité parfaite pour vous : devenir riche, gagner en expérience, acquérir du matériel de meilleure qualité, etc.", "Mais gardez en tête que votre ennemi final devient plus fort de jour en jour,", "ce sera donc à vous de trouver le bon compromis.", "", "En attendant, la nuit est tombée depuis longtemps. Pour ce soir, il n'y a pas grand chose à faire.", "Voulez-vous prendre une chambre dans une auberge ?"]);
-        addChoice("Prendre une chambre à l'auberge du Griffon Boiteux (5 or) — Restore vos Max PV et PA", () => processLieu(35));
+        addChoice("Prendre une chambre à l'auberge du Griffon Boiteux (5 or) — Restaure vos Max PV et PA", () => processLieu(35));
         addChoice("Dormir dehors dans une ruelle (gratuit) — +2 PV", () => processLieu(36));
     }
 
@@ -924,7 +955,7 @@
     }
 
     function dorsDehors() {
-        addLines(["", "Vous trouvez un coin de ruelle abrité du vent, entre deux tonneaux de bière vide.", "Le sol est dur et les rats peu discrets, mais l'épuisement vous terrasse en quelques secondes.", "Au matin, vous vous réveillez courbaturé mais vivant (+2 PV)."]);
+        addLines(["", "Vous trouvez un coin de ruelle abrité du vent, entre deux tonneaux de bière vides.", "Le sol est dur et les rats peu discrets, mais l'épuisement vous terrasse en quelques secondes.", "Au matin, vous vous réveillez courbaturé mais vivant (+2 PV)."]);
         _dormir(false);
     }
 
@@ -997,7 +1028,7 @@
 
     function combatArene(nom, pva, da, gainOr, gainExp, key) {
         if (s.ville.areneVaincus.includes(key)) {
-            addLines(["", `${nom} a déjà été vaincu et refusé de remonter sur le sable. La foule réclame du sang frais.`]);
+            addLines(["", `${nom} a déjà été vaincu et refuse de remonter sur le sable. La foule réclame du sang frais.`]);
             addChoice("Retourner à l'arène", () => processLieu(100));
             return;
         }
@@ -1052,7 +1083,7 @@
     const MISSIONS = [
         { titre: "Extermination de rats géants", intro: ["", "Le conseil de la guilde marchande est désespéré : les réserves de grain fondent à vue d'œil. Les sous-sols sont infestés d'une vermine d'une taille anormale.", "Vous descendez dans les caves humides. L'odeur est insupportable.", "Des traces de rongeurs géants sont visibles partout. Soudain, trois immenses silhouettes grises surgissent des ténèbres !"], ennemi: ["Les Rats Géants", 10, 1], win: () => { s.OR += 15; s.ville.missionsCompletes = Math.max(s.ville.missionsCompletes, 1); addLines(["", "Les rats gisent à vos pieds. Le conseil vous remet 15 pièces d'or. Mission accomplie."]); addChoice("Retour", () => processLieu(99)); } },
         { titre: "Escorte du marchand Tolbas", intro: ["", "Le marchand Tolbas, un notable riche mais lâche, doit acheminer un convoi précieux à travers le quartier des voleurs.", "La pègre locale rôde et il cherche une lame robuste pour sa protection.", "Vous escortez Tolbas dans les ruelles sombres et mal famées.", "À mi-chemin, les ombres s'allongent et trois coupeurs de gorge surgissent d'une impasse !"], ennemi: ["Les Coupeurs de gorge", 16, 2], win: () => { s.OR += 25; s.ville.missionsCompletes = Math.max(s.ville.missionsCompletes, 2); s.EXP+=1; addLines(["", "Les bandits prennent la fuite. Tolbas, soulagé, vous remet 25 pièces d'or.", "\"Vous m'avez sauvé la mise, l'ami. Je n'oublierai pas.\""]); addChoice("Retour", () => processLieu(99)); } },
-        { titre: "La Bête de la Carrière", intro: ["", "L'industrie de Kair Morten est paralysée. La carrière nord a été désertée après que plusieurs tailleurs de pierre aient été retrouvés déchiquetés.", "Le maître de chantier a mis la main à la poche pour payer un tueur de monstres digne de ce nom.", "Vous vous rendez à la carrière. Le silence est oppressant.", "Des traces de sang fraîches maculent la roche... puis un grognement sourd fait trembler le sol.", "Quelque chose de massif émerge de l'ombre : un Dévoreur de Pierre, mi-ours mi-sanglier !"], ennemi: ["Le Dévoreur de Pierre", 30, 4], win: () => { s.OR += 50; s.inventory.armor = { bonus: 8, hasIt: true }; s.ville.missionsCompletes = Math.max(s.ville.missionsCompletes, 3); s.EXP+=2; addLines(["", "La créature s'effondre dans un fracas assourdissant. Les ouvriers sortent de leurs cachettes et vous acclament.", "Le chef de chantier vous remet 50 or et une armure de carrier renforcée (+8 PV Max équipable)."]); addChoice("Retour", () => processLieu(99)); } },
+        { titre: "La Bête de la Carrière", intro: ["", "L'industrie de Kair Morten is paralysée. La carrière nord a été désertée après que plusieurs tailleurs de pierre aient été retrouvés déchiquetés.", "Le maître de chantier a mis la main à la poche pour payer un tueur de monstres digne de ce nom.", "Vous vous rendez à la carrière. Le silence est oppressant.", "Des traces de sang fraîches maculent la roche... puis un grognement sourd fait trembler le sol.", "Quelque chose de massif émerge de l'ombre : un Dévoreur de Pierre, mi-ours mi-sanglier !"], ennemi: ["Le Dévoreur de Pierre", 30, 4], win: () => { s.OR += 50; s.inventory.armor = { bonus: 8, hasIt: true }; s.ville.missionsCompletes = Math.max(s.ville.missionsCompletes, 3); s.EXP+=2; addLines(["", "La créature s'effondre dans un fracas assourdissant. Les ouvriers sortent de leurs cachettes et vous acclament.", "Le chef de chantier vous remet 50 or et une armure de carrier renforcée (+8 PV Max équipable)."]); addChoice("Retour", () => processLieu(99)); } },
         { titre: "Le Mage Renégat", intro: ["", "Une menace grandit au cœur même de la ville. Un ancien érudit, corrompu par d'anciennes magies, s'est barricadé dans la vieille tour de guet.", "Il invoque des tempêtes arcaniques et menace de faire sauter le quartier. Le conseil exige sa tête au plus vite.", "Vous gravissez les escaliers en colimaçon de la tour avec prudence.", "Des éclairs bleutés crépitent sur les murs. Au sommet, le mage lévite à moitié et vous accueille avec un rire dément.", "\"Encore un pion envoyé par ces fous ? Ta misérable vie s'achève ici !\""], ennemi: ["Le Mage Renégat", 22, 5], win: () => { s.OR += 80; s.maxPA += 2; s.PA += 2; s.PF += 2; s.ville.missionsCompletes = Math.max(s.ville.missionsCompletes, 4); s.EXP+=3; addLines(["", "Le mage s'effondre, ses sortilèges se dissipant dans un souffle de fumée.", "Dans ses affaires : un tome de magie impie. En l'étudiant purifié cette nuit, vous gagnez +2 PA Max et +2 PF.", "Le conseil vous remet 80 pièces d'or avec une gratitude sincère."]); addChoice("Retour", () => processLieu(99)); } }
     ];
 
@@ -1074,7 +1105,7 @@
     }
 
     function travail() {
-        addLines(["", "── LA ZONE DE TRAVAIL ──", "Des employeurs de toutes sortes cherchent de la main d'œuvre à Kair Morten.", "Le travail est épuisant, mais honnête. Choisissez votre activité :"]);
+        addLines(["", "── LA ZONE DE TRAVAIL ──", "Des employeurs de toutes sortes cherchent de la main-d'œuvre à Kair Morten.", "Le travail est épuisant, mais honnête. Choisissez votre activité :"]);
         addChoice("Porter des sacs au marché — 6 or (facile, -1 PV)", () => processLieu(131));
         addChoice("Creuser des fossés pour les fortifications — 10 or (dur, -2 PV, -1 PA Max)", () => processLieu(132));
         addChoice("Garder la nuit aux portes de la ville — 14 or (risqué, combat possible)", () => processLieu(133));
@@ -1120,7 +1151,7 @@
         addChoice("Retourner en ville", () => processLieu(99));
     }
 
-    function jeuxDes() {
+    function gamesDes() {
         if (s.OR < 5) { addLines(["", "Vous n'avez pas assez d'or pour jouer. Le croupier vous chasse de la table d'un geste dédaigneux."]); addChoice("Retour", () => processLieu(140)); return; }
         addLines(["", "Vous vous installez à la table des dés. Combien misez-vous ?"]);
         [5, 10, 20, 40].filter(m => m <= s.OR).forEach(m => addChoice(`Miser ${m} pièces d'or`, () => lancerDes(m)));
@@ -1186,7 +1217,7 @@
 
     function nuit() {
         addLines(["", "La nuit tombe sur Kair Morten. Les torches s'allument dans les rues.", "Où dormez-vous cette nuit ?"]);
-        addChoice(`Chambre à l'auberge du Griffon Boiteux (5 or) — Restore vos Max PV et PA`, () => processLieu(35));
+        addChoice(`Chambre à l'auberge du Griffon Boiteux (5 or) — Restaure vos Max PV et PA`, () => processLieu(35));
         addChoice("Dormir dehors dans une ruelle (gratuit) — +2 PV", () => processLieu(36));
     }
 
