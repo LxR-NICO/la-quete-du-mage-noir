@@ -6,57 +6,54 @@
     <title>La Quête du Mage Noir</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English:ital@0;1&display=swap');
-        
-        body {
+
+        /* Bases de la page */
+        body, html {
             background-color: #06050a;
             color: #d4c5a9;
             font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
             margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
             display: flex;
             justify-content: center;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
+            user-select: none;
         }
 
+        /* Conteneur Principal Vertical style mobile/carte */
         #game-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 500px; /* Format vertical condensé pour l'immersion */
+            height: 100%;
             display: flex;
             flex-direction: column;
-            padding: 16px;
-            padding-bottom: 24px; 
-            box-sizing: border-box;
-            height: 100%;
+            background-color: #000;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
         }
 
-        h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: #c8902a;
-            letter-spacing: 3px;
-            text-shadow: 0 0 20px rgba(200,144,42,.4);
-            text-align: center;
-            margin: 0 0 14px 0;
-        }
-
+        /* 1. BARRE D'ÉTAT (Tout en haut, fine et défilante horizontalement) */
         #stats-bar {
+            width: 100%;
+            height: 35px;
+            background: linear-gradient(to bottom, #141008, #0e0c07);
+            border-bottom: 2px solid #3a2a10;
             display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            background: #0e0c07;
-            border: 1px solid #3a2a10;
-            padding: 8px 16px;
-            border-radius: 2px;
-            margin-bottom: 8px;
+            align-items: center;
+            overflow-x: auto;
+            overflow-y: hidden;
+            white-space: nowrap;
+            padding: 0 10px;
             font-family: 'Cinzel', serif;
-            font-size: 13px;
+            font-size: 12px;
             letter-spacing: 0.5px;
+            z-index: 10;
+            scrollbar-width: none; /* Masque la scrollbar sur Firefox */
         }
+        #stats-bar::-webkit-scrollbar { display: none; } /* Masque sur Chrome/Safari */
+        #stats-bar span { margin-right: 15px; color: #a08040; }
 
         .stat-val { color: #fff; font-weight: bold; }
         .c-pv { color: #e05050; }
@@ -65,144 +62,211 @@
         .c-or { color: #e0c050; }
         .c-exp { color: #80e080; }
 
+        /* 2. ZONE IMAGE (Moitié supérieure - 50% de l'écran restant) */
+        .image-area {
+            width: 100%;
+            height: calc(50% - 17.5px);
+            position: relative;
+            background-color: #0c0a06;
+            border-bottom: 3px double #3a2a10;
+            overflow: hidden;
+        }
+        #game-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .image-frame {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 6px solid transparent;
+            border-image: linear-gradient(to bottom, #4a381a, #141008) 6;
+            pointer-events: none;
+        }
+
+        /* 3. ZONE PARCHEMIN (Moitié inférieure) */
+        .parchment-area {
+            width: 100%;
+            height: calc(50% - 17.5px);
+            background-color: #e6d5b8;
+            /* Texture parchemin ancien */
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.15), rgba(0,0,0,0.05)),
+                linear-gradient(rgba(196,174,131,0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(196,174,131,0.3) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+            box-shadow: inset 0 0 35px rgba(60, 43, 22, 0.5);
+            position: relative;
+        }
+
+        /* Zone de texte défilante (reprend le rôle de ton log-container) */
         #log-container {
-            flex-grow: 1;
-            background: #0c0a06;
-            border: 1px solid #2a1e0a;
-            border-radius: 2px;
-            padding: 14px 18px;
+            width: 100%;
+            height: 100%;
             overflow-y: auto;
-            margin-bottom: 12px;
-            font-size: 15px;
-            line-height: 1.65;
+            padding: 20px;
+            padding-bottom: 30px;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
         }
 
-        .log-line { margin: 2px 0; animation: fadeIn 0.15s ease-in; }
-        .log-sep { color: #5a3e20; font-size: 11px; letter-spacing: 1px; }
-        .log-stat { color: #a08040; font-size: 12px; font-style: italic; }
-        .log-title { color: #e0a030; font-weight: bold; }
-        .log-win { color: #80d080; }
-        .log-hit { color: #e05050; }
-        .log-miss { color: #8090a0; font-style: italic; }
-        .log-crit { color: #f0d050; font-weight: bold; }
+        .log-line { margin: 3px 0; color: #2b1f11; font-size: 15px; line-height: 1.6; text-align: justify; animation: fadeIn 0.15s ease-in; }
+        .log-sep { color: #705435; font-size: 11px; text-align: center; margin: 8px 0; }
+        .log-stat { color: #6e522f; font-size: 12px; font-style: italic; }
+        .log-title { color: #855307; font-weight: bold; font-family: 'Cinzel', serif; font-size: 16px; margin-top: 5px; }
+        .log-win { color: #1e631e; font-weight: bold; }
+        .log-hit { color: #8f1d1d; font-weight: bold; }
+        .log-miss { color: #505c69; font-style: italic; }
+        .log-crit { color: #a17b03; font-weight: bold; }
 
+        /* Titre flottant ou fixe sur l'image si nécessaire, retiré du flux pour le 50/50 */
+        .game-title-overlay {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #c8902a;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px #000, 0 0 10px rgba(0,0,0,0.8);
+            text-align: center;
+            z-index: 5;
+        }
+
+        /* 4. ZONE DES BOUTONS (Intégrés dans le parchemin, à la suite du texte) */
         #controls {
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            margin-top: 14px;
-            padding-bottom: 10px;
+            gap: 8px;
+            margin-top: 20px;
+            width: 100%;
         }
 
-        .btn-choice {
-            background: linear-gradient(135deg, #1e1408, #2a1c0a);
-            border: 1px solid #7a5a2a;
-            color: #e8d4a0;
-            padding: 10px 18px;
+        /* Bouton Style Pierre / Bois Sombre */
+        .btn-choice, .btn-action {
+            background: linear-gradient(135deg, #2b221a 0%, #17120e 100%);
+            border: 2px solid #5a452a;
+            color: #dcd1ba;
+            padding: 11px 16px;
             cursor: pointer;
             font-family: 'IM Fell English', serif;
             font-size: 15px;
             text-align: left;
-            border-radius: 2px;
-            transition: all .18s;
+            border-radius: 3px;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05);
+            transition: all .15s;
             width: 100%;
         }
 
-        .btn-action {
-            background: linear-gradient(135deg, #1a0808, #2a1010);
-            border: 1px solid #8b2020;
-            color: #f0c0a0;
-            padding: 9px 14px;
-            cursor: pointer;
-            font-family: 'IM Fell English', serif;
-            font-size: 14px;
-            border-radius: 2px;
-            transition: all .18s;
-            text-align: left;
+        .btn-choice:hover, .btn-action:hover {
+            border-color: #9e783e;
+            color: #fff;
+            background: linear-gradient(135deg, #3d3025 0%, #1d1712 100%);
+            transform: translateY(-1px);
         }
 
-        .btn-choice:hover, .btn-action:hover {
-            border-color: #c8902a;
-            color: #fff8e0;
-            transform: translateX(4px);
+        .btn-choice:active, .btn-action:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
 
         .btn-lvl {
-            background: linear-gradient(135deg, #0a1a08, #102810);
-            border: 1px solid #4a8a2a;
-            color: #c0f0a0;
-            padding: 10px 20px;
+            background: linear-gradient(135deg, #182615, #0c140a);
+            border: 1px solid #4a7337;
+            color: #c0ebd2;
+            padding: 8px 12px;
             cursor: pointer;
             font-family: 'Cinzel', serif;
-            font-size: 14px;
+            font-size: 13px;
             border-radius: 2px;
-            transition: all .18s;
-            text-align: center;
             flex: 1;
+            text-align: center;
         }
-
-        .btn-lvl:hover { border-color: #80d050; color: #e0ffc0; }
 
         .btn-main {
-            background: linear-gradient(135deg, #2a1800, #3d2500);
-            border: 2px solid #c8902a;
-            color: #f8e0a0;
-            padding: 12px 32px;
+            background: linear-gradient(135deg, #422d13, #241808);
+            border: 2px solid #a67c37;
+            color: #f7e6c4;
+            padding: 12px 28px;
             cursor: pointer;
             font-family: 'Cinzel', serif;
-            font-size: 17px;
-            letter-spacing: 2px;
-            border-radius: 2px;
-            margin: 20px auto;
+            font-size: 16px;
+            letter-spacing: 1px;
+            border-radius: 3px;
+            margin: 15px auto;
             display: block;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
 
-        .btn-main:hover {
-            border-color: #f0c060; color: #fff8d0;
-            box-shadow: 0 0 24px rgba(200,144,42,.4);
-        }
+        .btn-main:hover { border-color: #d9ab55; color: #fff; }
 
         input[type=text] {
-            background: #0e0a04;
+            background: #faf6ee;
             border: 1px solid #7a5a2a;
-            color: #e8d4a0;
-            padding: 9px 13px;
+            color: #2b1f11;
+            padding: 8px 12px;
             font-family: 'IM Fell English', serif;
-            font-size: 16px;
+            font-size: 15px;
             border-radius: 2px;
             outline: none;
-            width: 250px;
+            width: 100%;
         }
-        input[type=text]:focus { border-color: #c8902a; }
-        .input-group { display: flex; gap: 8px; }
+        .input-group { display: flex; gap: 6px; width: 100%; }
 
         ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #12100a; }
-        ::-webkit-scrollbar-thumb { background: #5a3e20; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+        ::-webkit-scrollbar-thumb { background: #8c714d; border-radius: 3px; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <h1>LA QUÊTE DU MAGE NOIR</h1>
+    <div class="game-title-overlay">LA QUÊTE DU MAGE NOIR</div>
+
     <div id="stats-bar"></div>
-    <div id="log-container">
-        <div id="log-text">
-            <div style="text-align:center; margin-top: 50px;">
-                <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:18px; color:#c0a870;">
-                    Votre famille a été décimée par un terrible Mage Noir.<br>La vengeance vous attend...<br>Si vous en avez le courage.
-                </p>
-                <button class="btn-main" onclick="startGame()">COMMENCER</button>
+
+    <div class="image-area">
+        <img id="game-image" src="" alt="Illustration de la scène">
+        <div class="image-frame"></div>
+    </div>
+
+    <div class="parchment-area">
+        <div id="log-container">
+            <div id="log-text">
+                <div style="text-align:center; margin-top: 40px; color: #2b1f11;">
+                    <p style="font-family:'IM Fell English',serif; font-style:italic; font-size:18px;">
+                        Votre family a été décimée par un terrible Mage Noir.<br>La vengeance vous attend...<br>Si vous en avez le courage.
+                    </p>
+                    <button class="btn-main" onclick="startGame()">COMMENCER</button>
+                </div>
             </div>
+            <div id="controls"></div>
         </div>
-        <div id="controls"></div>
     </div>
 </div>
 
 <script>
+    // ==========================================
+    // CONFIGURATION DES IMAGES GITHUB
+    // ==========================================
+    const GITHUB_USERNAME = "LxR-NICO";
+    const GITHUB_REPO = "la-quete-du-mage-noir";
+    const GITHUB_BRANCH = "main";
+
+    function changerImage(imageName) {
+        const imgElem = document.getElementById('game-image');
+        if (!imageName) {
+            imgElem.src = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${GITHUB_BRANCH}/image/caverne.jpg`;
+            return;
+        }
+        imgElem.src = `https://raw.githubusercontent.com/${GITHUB_USERNAME}/${GITHUB_REPO}/${GITHUB_BRANCH}/image/${imageName}`;
+        imgElem.alt = imageName;
+    }
+
     let s = {};
     const uiLog = document.getElementById('log-container');
     const uiLogText = document.getElementById('log-text');
@@ -223,14 +287,14 @@
         if (s.inventory.mushrooms > 0) html += `<span style="color:#90d060">🍄 ${s.inventory.mushrooms}</span>`;
         if (s.inventory.poison > 0) html += `<span style="color:#a060e0">☠ ${s.inventory.poison}</span>`;
         if (s.inventory.potions > 0) html += `<span style="color:#e05050">🧪 ${s.inventory.potions}</span>`;
-        
+
         if (s.inventory.sword.hasIt) html += `<span style="color:#888">Épée${s.inventory.sword.poisoned?"☠":""} (${s.inventory.sword.damage})${s.inventory.sword.sacred?"✨":""}</span>`;
         if (s.inventory.axe.hasIt) html += `<span style="color:#888">Hache${s.inventory.axe.poisoned?"☠":""} (${s.inventory.axe.damage})</span>`;
         if (s.inventory.dagger.hasIt) html += `<span style="color:#888">Dague${s.inventory.dagger.magicRegen?"✨":s.inventory.dagger.poisoned?"☠":""} (${s.inventory.dagger.damage})</span>`;
         if (s.inventory.armor.hasIt && s.inventory.armor.bonus > s.equippedArmorBonus) html += `<span style="color:#888">Armure (Non équipée)</span>`;
         if (s.hasBache) html += `<span style="color:#a07050">🧢 Bâche</span>`;
         if (s.inventory.onguent) html += `<span style="color:#4a8a2a">🌿 Onguent</span>`;
-        
+
         uiStats.innerHTML = html;
     }
 
@@ -248,24 +312,30 @@
         else if (text.includes("Félicitations") || text.includes("vaincu l'adversité")) div.classList.add("log-win");
         else if (text.includes("raté") || text.includes("esquivé in extremis")) div.classList.add("log-miss");
         else if (text.includes("vous a porté") || text.includes("succombez") || text.includes("douleur") || text.includes("griffes") || text.includes("s'enfoncent")) div.classList.add("log-hit");
-        
+
         div.innerHTML = text;
         uiLogText.appendChild(div);
     }
 
-    function addLines(lines) { 
+    function addLines(lines) {
         if (lines.length === 0) return;
+
+        // IMPORTANT : On NE vide PLUS le texte. On laisse s'accumuler comme avant !
+
+        // On crée un point d'ancrage pour le défilement
         const anchor = document.createElement('div');
-        uiLogText.appendChild(anchor);
-        
-        lines.forEach(printLine); 
-        updateStats(); 
-        
+        document.getElementById('log-text').appendChild(anchor);
+
+        // On écrit toutes les nouvelles lignes à la suite
+        lines.forEach(printLine);
+        updateStats(); // Appelle ta fonction de statistiques
+
+        // Fait défiler automatiquement le parchemin vers le bas pour voir le nouveau texte
         setTimeout(() => {
             anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }, 40);
     }
-    
+
     function clearControls() { uiControls.innerHTML = ""; }
 
     function addChoice(label, onClick, styleClass = "btn-choice") {
@@ -277,6 +347,7 @@
     }
 
     function startGame() {
+        changerImage("ruines.jpg"); // Image de départ au lancement
         s = {
             isPlaying: true, PV: 20, maxPV: 20, PA: 10, maxPA: 10, PF: 3, EXP: 0, OR: 5,
             lieu: 1, b: 0, g: 1, dunes: 2, corde: true, hasBache: false,
@@ -302,7 +373,7 @@
         };
         uiLogText.innerHTML = "";
         clearControls();
-        
+
         addLines([
             "────────────────────────────────────────────────────────────────────────────────",
             "Soyez le bienvenu, jeune homme, en cet hiver glacial. Votre famille et votre clan ont été décimés par le Mage Noir.",
@@ -322,7 +393,7 @@
             "Vous vous trouvez à l'entrée de votre village natal. Deux chemins s'offrent à vous :",
             "────────────────────────────────────────────────────────────────────────────────"
         ]);
-        
+
         addChoice("Passer par les montagnes enneigées au Nord", () => processLieu(2));
         addChoice("Passer la forêt ténébreuse à l'Est", () => processLieu(3));
     }
@@ -331,20 +402,20 @@
         if (s.EXP >= 6) {
             s.EXP -= 6;
             addLines(["", "Vous avez atteint le niveau supérieur d'expérience.", "Dans quel domaine voulez-vous gagner en expérience (+1 point permanent) ?"]);
-            
+
             const wrapper = document.createElement('div');
             wrapper.style.display = "flex"; wrapper.style.gap = "8px";
             wrapper.style.marginTop = "10px";
-            
+
             const btnPV = document.createElement('button'); btnPV.className = "btn-lvl"; btnPV.innerText = "+1 PV Max";
             btnPV.onclick = () => { s.maxPV += 1; s.PV += 1; addLines(["Vos PV Max augmentent de 1 !"]); clearControls(); checkLevelUp(nextAction); };
-            
+
             const btnPA = document.createElement('button'); btnPA.className = "btn-lvl"; btnPA.innerText = "+1 PA Max";
             btnPA.onclick = () => { s.maxPA += 1; s.PA += 1; addLines(["Vos PA Max augmentent de 1 !"]); clearControls(); checkLevelUp(nextAction); };
-            
+
             const btnPF = document.createElement('button'); btnPF.className = "btn-lvl"; btnPF.innerText = "+1 PF";
             btnPF.onclick = () => { s.PF += 1; addLines(["Vos PF augmentent de 1 !"]); clearControls(); checkLevelUp(nextAction); };
-            
+
             wrapper.appendChild(btnPV); wrapper.appendChild(btnPA); wrapper.appendChild(btnPF);
             uiControls.appendChild(wrapper);
         } else {
@@ -362,7 +433,7 @@
             else if (lieu === 7) montagneEpuise();
             else if (lieu === 9) chasser();
             else if (lieu === 10) pecher();
-            else if (lieu === 11) bandits(); 
+            else if (lieu === 11) bandits();
             else if (lieu === 12) foretGauche();
             else if (lieu === 13) combatGobelin();
             else if (lieu === 14) dealChampignons();
@@ -431,7 +502,7 @@
     function promptCombatAction() {
         updateStats();
         let c = s.combat;
-        
+
         if (s.inventory.sword.hasIt) {
             let label = `Attaquer à l'épée${s.inventory.sword.poisoned ? " (empoisonnée)" : ""}${s.inventory.sword.sacred ? " ✨sacrée" : ""} — chance sur 12`;
             addChoice(label, () => executeAttack("sword", 12), "btn-action");
@@ -442,7 +513,7 @@
             let label = `Attaquer à la dague${daggerTags.length ? " (" + daggerTags.join(" + ") + ")" : ""} — chance sur 14`;
             addChoice(label, () => executeAttack("dagger", 14), "btn-action");
         }
-        
+
         if (s.inventory.armor.hasIt && !c.armorUsed && s.inventory.armor.bonus > s.equippedArmorBonus) {
             let gain = s.inventory.armor.bonus - s.equippedArmorBonus;
             addChoice(`Equiper l'armure (+${gain} PV Max)`, () => {
@@ -454,7 +525,7 @@
                 enemyAttack();
             }, "btn-action");
         }
-        
+
         if (s.inventory.mushrooms > 0) {
             addChoice(`Manger un champignon, gagne 2 PV et 1 PA (${s.inventory.mushrooms} restant(s))`, () => {
                 s.PV = Math.min(s.PV + 2, s.maxPV); s.PA = Math.min(s.PA + 1, s.maxPA); s.inventory.mushrooms -= 1;
@@ -469,7 +540,7 @@
                 enemyAttack();
             }, "btn-action");
         }
-        
+
         if (s.inventory.poison > 0) {
             addChoice(`Empoisonner la pointe d'une arme (${s.inventory.poison} dose(s))`, () => {
                 clearControls();
@@ -479,7 +550,7 @@
                 addChoice("Annuler", promptCombatAction, "btn-action");
             }, "btn-action");
         }
-        
+
         // FUITE
         addChoice("Vous enfuir", () => {
             clearControls();
@@ -536,7 +607,7 @@
         }
         s.EXP += 1;
         s.combat.roundExp += 1;
-        
+
         enemyAttack();
     }
 
@@ -546,10 +617,10 @@
             c.pva -= 1;
             addLines([`Le poison ronge ${c.name} (-1 PV). PV restants : ${Math.max(0, c.pva)}`]);
         }
-        
+
         if (c.pva <= 0) {
             addLines(["", "────────────────────────────────────────────────────────────────────────────────", "Félicitations, valeureux guerrier.", "Vous avez vaincu l'adversité avec force et courage."]);
-            s.EXP += 1; 
+            s.EXP += 1;
             addLines([`[ Total d'expérience remportée pour ce combat : ${c.roundExp + 1} EXP ]`, "────────────────────────────────────────────────────────────────────────────────"]);
             let cb = c.onWin;
             let isArene = c.isArene;
@@ -568,7 +639,7 @@
             addLines(["", `${c.name} vous a porté une attaque`]);
             s.PV -= c.da;
         }
-        
+
         if (s.PV <= 0) {
             if (c.isArene) return areneInfirmerie();
             return declareDefeat(c.name);
@@ -577,6 +648,7 @@
     }
 
     function areneInfirmerie() {
+        changerImage("arene_infirmerie.jpg");
         s.combat = null;
         s.PV = Math.max(1, Math.floor(s.maxPV / 2));
         s.PA = Math.max(1, Math.floor(s.maxPA / 2));
@@ -600,6 +672,7 @@
     }
 
     function declareDefeat(enemyName) {
+        changerImage("defaite.jpg");
         s.isPlaying = false;
         if (enemyName) addLines(["", `${enemyName} a finalement pris l'avantage de cet affrontement, et vous succombez de vos blessures.`, "Ainsi, dans la honte et la faiblesse, s'achève votre quête."]);
         addLines([
@@ -609,7 +682,7 @@
             "Ainsi l'histoire s'arrête, votre nom effacé à jamais.",
             "────────────────────────────────────────────────────────────────────────────────"
         ]);
-        
+
         const btn = document.createElement('button');
         btn.className = "btn-main"; btn.innerText = "RÉESSAYER";
         btn.onclick = startGame;
@@ -618,12 +691,14 @@
 
     // --- LIEUX ---
     function montagne() {
+        changerImage("montagne.jpg");
         addLines(["", "Vous commencez à grimper laborieusement. La fatigue commence à se faire sentir.", "Vous apercevez finalement une caverne au loin."]);
         addChoice("Aller à la caverne pour passer la nuit", () => processLieu(4));
         addChoice("Passer votre chemin et continuez l'ascension", () => { s.montagneFaite = true; processLieu(7); });
     }
 
     function foret() {
+        changerImage("foret.jpg");
         s.PV -= 1;
         addLines(["", "Vous vous enfoncez petit à petit à travers l'épaisse végétation sombre et humide.", "Après avoir marché 3 heures au milieu des moustiques assoiffés de sang et trébuché à travers d'innombrables racines (-1 PV),", "vous n'avez plus qu'une idée en tête : sortir de cette jungle oppressante.", "Vous arrivez à un croisement."]);
         if (s.PV <= 0) return declareDefeat(null);
@@ -636,6 +711,7 @@
     }
 
     function caverne() {
+        changerImage("caverne.jpg");
         addLines(["", "Vous avancez dans les ténèbres de la caverne. Le soleil couchant fait refléter la paroi de l'entrée.", "Vous commencez à aménager un coin pour passer la nuit lorsque vous entendez un grognement sinistre dans votre dos.", "Au moment où vous vous retournez, terrifié, vous voyez un ours vous sauter dessus."]);
 
         if (s.corde) {
@@ -662,6 +738,7 @@
     }
 
     function onWinOurs() {
+        changerImage("onWinOurs.jpeg");
         s.inventory.armor = { bonus: 4, hasIt: true };
         addLines(["", "Avec la fourrure de l'ours, vous fabriquez une armure qui vous rapportera 4 PV Max si vous l'équipez lors d'un combat.", "Vous vous reposez dignement après cet affrontement.", "Le lendemain matin, vous reprenez votre chemin, revigoré par ce sommeil amplement mérité.", "Après de longues heures d'effort, vous arrivez enfin au sommet de la montagne. Le vent frais du Nord fouette votre visage.", "Cependant, vous sentez votre ventre gargouiller. Vous n'avez plus une minute à perdre, il faut vous mettre en quête de nourriture."]);
         addChoice("Aller à la chasse aux marmottes à l'aide de pièges", () => processLieu(9));
@@ -671,6 +748,7 @@
     }
 
     function montagneEpuise() {
+        changerImage("montagne.jpg");
         s.PA = Math.max(1, s.PA - 2);
         addLines(["", "Vous reprenez votre chemin. La pause attendra.", "Après de longues heures d'effort, vous arrivez enfin au sommet de la montagne. Le vent frais du Nord fouette votre visage.", "Épuisé, vous vous écroulez au sol et la fatigue accumulée vous fait perdre connaissance (-2 PA).", "Lorsque vous ouvrez les yeux, le soleil est déjà haut dans le ciel.", "Cependant, vous sentez votre ventre gargouiller. Vous n'avez plus une minute à perdre, il faut vous mettre en quête de nourriture."]);
         addChoice("Aller à la chasse aux marmottes à l'aide de pièges", () => processLieu(9));
@@ -680,6 +758,7 @@
     }
 
     function chasser() {
+        changerImage("chasser.jpg");
         s.PV -= 1; s.PA = Math.max(1, s.PA - 1);
         addLines(["", "Vous installez des pièges à des endroits judicieux. Cependant 2 heures plus tard les pièges sont toujours vides.", "Vous réalisez alors que vous êtes stupide : les marmottes hibernent en hiver. Quel piètre chasseur vous faites !", "Vous décidez donc d'aller pêcher sur le lac, malgré votre ventre souffrant (-1 PV et -1 PA).", "Vous apercevez progressivement les plages de cailloux et la surface étincelante.", "Vous réalisez alors que le lac est entièrement recouvert d'une épaisse couche de glace."]);
         if (s.PV <= 0) return declareDefeat(null);
@@ -689,6 +768,7 @@
     }
 
     function pecher() {
+        changerImage("pecher.jpg");
         addLines(["", "Vous vous dirigez vers le lac. Vous apercevez progressivement ses plages de cailloux et sa surface étincelante.", "Vous réalisez alors que cette dernière est entièrement recouverte d'une épaisse couche de glace."]);
         addChoice("Continuer vers le lac", () => processLieu(16));
         addChoice("Aller à la chasse aux marmottes", () => processLieu(9));
@@ -697,6 +777,7 @@
     }
 
     function foretGauche() {
+        changerImage("foret.jpg");
         addLines(["", "Vous avancez vaillamment dans cette direction, le cou baigné d'une chaleur timide.", "Au bout de quelques kilomètres, une petite créature s'approche docilement de vous. Elle semble vous observer."]);
         addChoice("Tirer votre arme pour l'attaquer", () => processLieu(13));
         addChoice("Tenter d'établir la communication avec cette créature", () => processLieu(14));
@@ -704,12 +785,14 @@
     }
 
     function combatGobelin() {
+        changerImage("combat_gobelin.jpg");
         s.g = 0;
         addLines(["", "Vous sortez votre épée de son étui, et armez votre bras afin de lui porter un coup fatal.", "Mais le gobelin, au moment même où la lame allait le trancher en deux, esquive habilement l'arme et détale dans la forêt en ricanant.", "Vous êtes surpris par cette réaction inattendue, mais reprenez vos esprits et décidez d'aller de l'avant."]);
         addChoice("Continuer", () => suiteForetApresDealer());
     }
 
     function dealChampignons() {
+        changerImage("marchand_gobelin.jpg");
         addLines(["", "Vous vous avancez vers le gobelin.", "Ce dernier sort alors de dessous son manteau une panoplie d'objets à l'apparence douteuse, en s'exclamant : \"Tu veux des champignons ?\".", "Ces champignons aux nombreux bienfaits vous coûteront 2 pièces d'or par unité, mais vous permettront de regagner 2 PV et 1 PA si vous les mangez lors d'un combat.", `(Or disponible : ${s.OR}) — Combien en prenez-vous ?`]);
         const max = Math.floor(s.OR / 2);
         for (let i = 0; i <= Math.min(max, 6); i++) {
@@ -739,6 +822,7 @@
     }
 
     function bandits() {
+        changerImage("bandits.jpg");
         addLines(["", "Vous continuez votre chemin dans cette direction, et le sentier s'élargit.", "Vous avancez, réjoui de pouvoir enfin progresser sans trébucher ni vous faire fouetter par les basses branches.", "Cependant, cette paix intérieure ne dura pas longtemps : le chemin se rétrécit à quelques mètres de vous.", "Vous vous arrêtez, hésitant, lorsqu'un groupe de 3 bandits vous saute brusquement dessus !"]);
 
         const roll = randint(1, 20);
@@ -755,7 +839,7 @@
             const gold = randint(3, 5);
             s.OR += gold; s.inventory.axe = { damage: 4, poisoned: false, hasIt: true };
             addLines(["", `En fouillant les cadavres des malfaiteurs, vous trouvez ${gold} pièces d'or, ainsi qu'une hache de bûcheron, infligeant -4 PV.`, "Cette arme étant difficile à manier, une attaque à la hache est moins précise qu'une attaque à l'épée.", "Vous poursuivez votre quête en choisissant finalement de maintenir le cap."]);
-            
+
             s.banditsFait = true;
             if (!s.gobelinFait) {
                 addChoice("Continuer", () => processLieu(12));
@@ -767,6 +851,7 @@
     }
 
     function lac() {
+        changerImage("lac.jpg");
         s.PV = Math.min(s.PV + 2, s.maxPV);
         addLines(["", "Vous décidez de ramasser un caillou, ainsi qu'un bâton et quelques insectes qui vous serviront d'appâts.", "Avec le bâton et votre corde, vous confectionnez une canne à pêche, au bout de laquelle vous attachez les insectes et vers de terre.", "Vous brisez la glace avec le caillou, et commencez à attendre patiemment que quelque chose morde.", "Au bout d'une demi-heure, vous avez attrapé 2 poissons, vous offrant la certitude d'un repas consistant (+2 PV)."]);
         if (randint(1, 5) === 1) {
@@ -778,6 +863,7 @@
     }
 
     function eboulement() {
+        changerImage("eboulement.jpg");
         let roll = randint(1, 30);
         addLines(["", "Vous vous engagez sur un sentier rocailleux et très pentu.", "Soudain, un grondement sourd résonne au-dessus de vous. Des rochers se détachent de la paroi !"]);
         if (s.PA >= roll) {
@@ -794,8 +880,9 @@
     }
 
     function temple() {
+        changerImage("temple.jpg");
         addLines(["", "Toujours avec la même volonté, vous poursuivez votre route à travers un sentier escarpé.", "Épuisé, mais déterminé, vous marchez à travers la montagne, et les nuages commencent à se dissiper dans le ciel.", "Malgré le fait que votre priorité capitale reste la survie, vous avez la certitude que ni la fatigue, ni les blessures ne vous arrêteront.", "Pressant le pas, vous finissez par apercevoir au loin une maison, promesse d'un bon repas et d'un sommeil confortable.", "Le bâtiment se révèle être une sorte de dôme doré. Vous vous approchez, en cherchant un quelconque moyen d'y pénétrer.", "En tournant autour de l'étrange bâtiment, vous trouvez enfin la porte d'entrée, bloquée par un système de sécurité requérant un mot de passe.", "", "Quel est ce mot de passe (en lettres majuscules) ?"]);
-        
+
         const wrapper = document.createElement('div'); wrapper.className = "input-group";
         const inp = document.createElement('input'); inp.type = "text"; inp.placeholder = "Mot de passe...";
         const btn = document.createElement('button'); btn.className = "btn-main"; btn.style.margin = "0"; btn.innerText = "→";
@@ -814,6 +901,7 @@
     }
 
     function transition() {
+        changerImage("transition.jpg");
         if (s.montagneFaite && s.gobelinFait && s.banditsFait) {
             addLines(["", "Jusqu'ici, vous avez survécu et paré le danger. Restez tout de même sur vos gardes et ne vous reposez pas sur vos lauriers.", "Au fur et à mesure que vous avancez, les arbres se raréfient, au profit de la terre desséchée et du sable.", "Vous réalisez alors que vous allez devoir poursuivre votre aventure à travers le tristement célèbre désert de la mort.", "Au creux d'un amas rocheux, vous trouvez une bâche.", "Cependant, n'ayant toujours pas de sac pour transporter vos affaires, vous ne pouvez emporter qu'un seul objet entre votre corde et cette bâche."]);
             addChoice("Garder la corde", () => processLieu(20));
@@ -828,6 +916,7 @@
     }
 
     function desert() {
+        changerImage("desert.jpg");
         if (s.lieu === 21) { s.corde = false; s.hasBache = true; }
         addLines(["", "Après avoir fait ce choix crucial pour le reste de votre aventure, vous poursuivez votre quête avec détermination.", "La chaleur commences à se faire sentir, et toute trace de vie disparaît, vous laissant seul avec votre destin.", "Au loin devant vous s'étalent les dunes à perte de vue. Cette direction sera le chemin le plus court, mais surtout le plus risqué.", "Un sentier délimité, effacé par le vent et les années, continue sur votre droite.", "Si vous passez par là, vous limitez les dangers, mais risquez de perdre beaucoup de temps."]);
         addChoice("Continuer tout droit vers les dunes", () => processLieu(22));
@@ -835,6 +924,7 @@
     }
 
     function nomade() {
+        changerImage("nomade.jpg");
         if (s.lieu === 23) s.dunes += 1;
         s.PV -= 1;
         addLines(["", "Ainsi vous avancez dans cette direction, malgré la chaleur qui s'intensifie.", "Après quelques heures de marche étouffantes (- 1PV), vous faites la rencontre d'un nomade du désert à dos de dromadaire, faiblement armé."]);
@@ -844,6 +934,7 @@
     }
 
     function combatNomade() {
+        changerImage("combat_nomade.jpg");
         startCombat("Le nomade", 6, 1, () => {
             s.OR += 1; s.PV -= 3;
             addLines(["", "Cependant, cet homme du désert représentait une proie facile.", "En fouillant son cadavre, vous trouvez 1 pièce d'or, ainsi qu'une bouteille d'eau dont le contenu s'est malheureusement déversé dans le sable.", "Il aurait été plus judicieux de ne pas attaquer l'homme aussi vite, car les effets de la déshydratation commencent à se faire sentir (-2 PV).", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profiter d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
@@ -852,6 +943,7 @@
     }
 
     function echangeNomade() {
+        changerImage("echange_nomade.jpg");
         s.PV -= 1;
         s.PV = Math.min(s.PV + 2, s.maxPV);
         addLines(["", "Vous vous approchez de l'homme du désert en lui faisant des signes de main.", "Le vagabond, visiblement content d'avoir un contact humain, vous confie une bouteille d'eau.", "Vous buvez goulûment son contenu, ravi d'avoir pu éviter la déshydratation jusqu'ici. (+2 PV)", "L'homme vous offre également son dromadaire, et vous acceptez ce présent avec de chaleureux remerciements.", "Vous enfourchez votre nouvelle monture et continuez votre chemin à travers le désert.", "Le soleil commence enfin à descendre vers l'horizon, vous accordant un peu de fraîcheur.", "Alors que vous pensiez profiter d'un moment de répit, un énorme scorpion mutant,", "qui s'était approché silencieusement de vous à la faveur de l'obscurité naissante, vous renverse du dos de votre dromadaire."]);
@@ -871,6 +963,7 @@
     }
 
     function scorpion() {
+        changerImage("scorpion.jpg");
         startCombat("Le scorpion mutant", s.dunes * 6, s.dunes, () => {
             s.inventory.poison = 2;
             addLines(["", "Vous récupérez le venin de la créature dans la gourde du nomade, remontez sur le dos de votre dromadaire et reprenez votre chemin.", "Si vous imbibez une de vos armes de ce venin lors d'un combat, l'attaque empoisonnera votre adversaire, lui infligeant -1 PV par tour jusqu'à sa mort.", "Le poison reste éternellement sur votre arme jusqu'à ce que vous la remplaciez.", "La dose que vous avez récupérée vous permettra d'imbiber deux de vos armes."]);
@@ -883,8 +976,9 @@
     }
 
     function oasis() {
+        changerImage("oasis.jpg");
         if (s.lieu === 27) {
-            s.PV = Math.min(s.PV + 3, s.maxPV); 
+            s.PV = Math.min(s.PV + 3, s.maxPV);
             s.inventory.dagger = { damage: 1, poisoned: false, magicRegen: true, hasIt: true };
             addLines(["", "Vous guidez votre dromadaire vers l'oasis. En vous approchant, vous distinguez des palmiers chargés de dattes et une source d'eau limpide.", "Vous buvez à satiété, remplissez votre gourde, et cueillez quelques dattes qui vous redonnent des forces (+3 PV).", "À l'ombre des palmiers, vous trouvez les ossements d'un aventurier moins chanceux que vous.", "Parmi ses affaires, une étrange dague dont la lame émet une faible lueur écarlate. Vous l'examinez.", "C'est une arme vampirique ! Cette dague magique n'inflige qu'1 dégât (plus vos PF), mais elle draine l'essence vitale de l'ennemi pour vous soigner de 1 PV à chaque coup porté.", "Vous la glissez dans votre ceinture. Reposé et ravitaillé, vous reprenez la piste vers l'est."]);
         } else {
@@ -896,6 +990,7 @@
     }
 
     function tempeteSable() {
+        changerImage("tempete.jpg");
         addLines(["", "Vous progressez depuis plusieurs heures lorsque le ciel vire soudainement au jaune orangé.", "Un rugissement sourd monte de l'horizon : une tempête de sable approche à toute vitesse.", "Vous n'avez que quelques instants pour réagir."]);
         if (s.hasBache) {
             addChoice("🧢 Vous abriter sous votre bâche (meilleure protection)", () => {
@@ -910,6 +1005,7 @@
     }
 
     function tempeteAbri() {
+        changerImage("tempete.jpg");
         s.PV -= 1;
         addLines(["", "Vous mettez rapidement votre dromadaire à genoux, vous aplatissez derrière lui et enroulez votre manteau autour de votre visage.", "La tempête vous engloutit pendant ce qui vous semble une éternité. Le sable s'infiltre partout (-1 PV).", "Mais vous avez survécu. Votre dromadaire, lui, s'est enfui dans la tempête. Vous êtes désormais à pied.", "Lorsque le sable retombe, vous apercevez au loin les premiers contreforts d'une région rocheuse : les Falaises de Keth."]);
         if (s.PV <= 0) return declareDefeat("La tempête de sable");
@@ -917,6 +1013,7 @@
     }
 
     function tempeteFuite() {
+        changerImage("tempete.jpg");
         s.PV -= 3;
         addLines(["", "Vous éperonnez votre dromadaire à toute vitesse. Pendant un instant, vous croyez y échapper...", "Mais la tempête est bien plus rapide que vous. Elle vous rattrape et vous projette à terre (-3 PV).", "Votre dromadaire s'emballe et disparaît dans le tourbillon. Vous vous retrouvez seul, à genoux, à moitié enterré.", "Après de longues minutes d'angoisse, la tempête passe. Vous vous relevez, meurtri mais vivant.", "Au loin, les Falaises de Keth se dessinent sous un ciel enfin dégagé."]);
         if (s.PV <= 0) return declareDefeat("La tempête de sable");
@@ -924,12 +1021,14 @@
     }
 
     function tempeteRocher() {
+        changerImage("tempete.jpg");
         s.OR += 5; s.maxPA += 1; s.PA += 1;
         addLines(["", "Votre instinct vous guide vers un amas rocheux à quelques centaines de mètres.", "Vous y arrivez juste à temps, vous faufilant dans une crevasse étroite avec votre dromadaire.", "La tempête fait rage dehors, mais vous êtes à l'abri.", "Dans la crevasse, vous découvrez un vieux feu de camp abandonné. Sous une pierre plate : une bourse de 5 pièces d'or et un parchemin.", "Le parchemin est une carte partielle des Falaises de Keth. Elle vous sera précieuse (+1 PA Max).", "Une fois la tempête passée, vous reprenez la route, dispos et guidé par votre nouvelle carte."]);
         addChoice("Continuer vers les falaises", () => processLieu(33));
     }
 
     function falaisesKeth() {
+        changerImage("falaises.jpg");
         addLines(["", "Les Falaises de Keth se dressent devant vous comme une muraille naturelle de grès rouge sang.", "Des centaines de mètres de roche verticale, creusées d'innombrables cavités où nichent des créatures ailées au regard mauvais.", "Un chemin taillé à même la roche serpente le long de la falaise. D'autres ont visiblement emprunté cette route avant vous.", "Alors que vous commencez l'ascension, une ombre immense vous survole en poussant un cri strident.", "Un Griffon des sables fond sur vous depuis les hauteurs !"]);
         startCombat("Le Griffon des sables", 18, 3, () => {
             s.inventory.goldenFeather = true;
@@ -939,12 +1038,14 @@
     }
 
     function arriveeKairMorten() {
+        changerImage("kair_morten.jpg");
         addLines(["", "────────────────────────────────────────────────────────────────────────────────", "Enfin !!! Vous voilà arrivé à KAIR MORTEN, la dernière cité humaine avant les terres hostiles,", "peuplées de terrifiantes créatures.", "Au-delà de ses murs, vous ne rencontrerez plus que de vils monstres, barbares et assoiffés de sang.", "Mais ce n'est pas le moment de reculer, votre ennemi se renforce de jour en jour et le temps presse.", "Cependant, vous êtes faible et vous en avez conscience : il faut vous préparer un minimum", "car dans votre état actuel, vous n'êtes qu'un vulgaire moucheron.", "Heureusement pour vous, KAIR MORTEN est l'endroit idéal pour ça.", "En effet, étant la porte vers les terres hostiles, cette ville est le repaire des aventuriers", "ou chasseurs de primes en tout genre qui n'hésitent pas à mettre leur vie en jeu pour gagner de l'argent.", "C'est l'opportunité parfaite pour vous : devenir riche, gagner en expérience, acquérir du matériel de meilleure qualité, etc.", "Mais gardez en tête que votre ennemi final devient plus fort de jour en jour,", "ce sera donc à vous de trouver le bon compromis.", "", "En attendant, la nuit est tombée depuis longtemps. Pour ce soir, il n'y a pas grand chose à faire.", "Voulez-vous prendre une chambre dans une auberge ?"]);
         addChoice("Prendre une chambre à l'auberge du Griffon Boiteux (5 or) — Restaure vos Max PV et PA", () => processLieu(35));
         addChoice("Dormir dehors dans une ruelle (gratuit) — +2 PV", () => processLieu(36));
     }
 
     function auberge() {
+        changerImage("auberge.jpg");
         if (s.OR < 5) {
             addLines(["", "L'aubergiste vous regarde de haut en bas et secoue la tête.", "\"Désolé l'ami, sans le sou on dort pas ici.\"", "Vous ressortez, penaud, et trouvez un coin de ruelle pour passer la nuit."]);
             _dormir(false);
@@ -956,6 +1057,7 @@
     }
 
     function dorsDehors() {
+        changerImage("ruelle.jpg");
         addLines(["", "Vous trouvez un coin de ruelle abrité du vent, entre deux tonneaux de bière vides.", "Le sol est dur et les rats peu discrets, mais l'épuisement vous terrasse en quelques secondes.", "Au matin, vous vous réveillez courbaturé mais vivant (+2 PV)."]);
         _dormir(false);
     }
@@ -981,6 +1083,7 @@
     }
 
     function menuVille() {
+        changerImage("kair_morten.jpg");
         addLines(["", `── KAIR MORTEN — Jour ${s.ville.jour} ──`, "Où souhaitez-vous aller ?"]);
         addChoice("🗡  L'Arène — Combattre pour gagner or et expérience", () => processLieu(100));
         addChoice("🏪  Le Marché — Acheter des équipements", () => processLieu(110));
@@ -1002,6 +1105,7 @@
     ];
 
     function arene() {
+        changerImage("arene.jpg");
         const v = s.ville.areneVictoires;
         const vaincus = s.ville.areneVaincus;
         addLines(["", "── L'ARÈNE DE KAIR MORTEN ──", "La foule rugit. L'odeur du sang et de la sueur imprègne l'air brûlant de l'arène.",
@@ -1028,6 +1132,7 @@
     }
 
     function combatArene(nom, pva, da, gainOr, gainExp, key) {
+        changerImage("arene.jpg");
         if (s.ville.areneVaincus.includes(key)) {
             addLines(["", `${nom} a déjà été vaincu et refuse de remonter sur le sable. La foule réclame du sang frais.`]);
             addChoice("Retourner à l'arène", () => processLieu(100));
@@ -1068,6 +1173,7 @@
     ];
 
     function marche() {
+        changerImage("marche.jpg");
         addLines(["", "── LE MARCHÉ DE KAIR MORTEN ──", "Les étals s'étendent à perte de vue, chargés d'armes, d'armures et d'objets en tout genre.", "Un marchand édenté vous interpelle : \"Viens voir, l'ami, j'ai ce qu'il te faut !\"", `Votre bourse : ${s.OR} pièces d'or. Que souhaitez-vous ?`]);
         MARCHE_ITEMS.forEach((item, idx) => {
             addChoice(`${item.nom} (${item.prix} or) — ${item.desc}`, () => {
@@ -1089,6 +1195,7 @@
     ];
 
     function missions() {
+        changerImage("missions.jpg");
         const mc = s.ville.missionsCompletes;
         addLines(["", "── TABLEAU DES MISSIONS ──", "Un panneau de liège couvert d'avis et de primes. Des aventuriers de tout poil l'étudient avec intérêt."]);
         if (mc < 1) addChoice("Extermination de rats géants — Récompense : 15 or", () => lancerMission(0));
@@ -1100,12 +1207,14 @@
     }
 
     function lancerMission(idx) {
+        changerImage("combat_mission.jpg");
         const m = MISSIONS[idx];
         addLines([`── MISSION : ${m.titre} ──`, ...m.intro]);
         startCombat(m.ennemi[0], m.ennemi[1], m.ennemi[2], m.win);
     }
 
     function travail() {
+        changerImage("travail.jpg");
         addLines(["", "── LA ZONE DE TRAVAIL ──", "Des employeurs de toutes sortes cherchent de la main-d'œuvre à Kair Morten.", "Le travail est épuisant, mais honnête. Choisissez votre activité :"]);
         addChoice("Porter des sacs au marché — 6 or (facile, -1 PV)", () => processLieu(131));
         addChoice("Creuser des fossés pour les fortifications — 10 or (dur, -2 PV, -1 PA Max)", () => processLieu(132));
@@ -1114,6 +1223,7 @@
     }
 
     function travailPorter() {
+        changerImage("travail.jpg");
         s.OR += 6; s.PV -= 1;
         addLines(["", "Vous passez la journée à porter des sacs de grains et des caisses de marchandises sous un soleil de plomb.", "Le dos en compote mais le moral intact, vous repartez avec 6 pièces d'or (-1 PV)."]);
         if (s.PV <= 0) return declareDefeat("L'épuisement");
@@ -1121,6 +1231,7 @@
     }
 
     function travailCreuser() {
+        changerImage("travail.jpg");
         s.OR += 10; s.PV -= 2; s.maxPA = Math.max(s.maxPA - 1, 1); s.PA = Math.min(s.PA, s.maxPA);
         addLines(["", "Douze heures de creusage sous la férule d'un contremaître sadique.", "Vos mains saignent et vos muscles crient grâce. Mais vous avez gagné 10 pièces d'or (-2 PV, -1 PA Max)."]);
         if (s.PV <= 0) return declareDefeat("L'épuisement");
@@ -1128,6 +1239,7 @@
     }
 
     function travailGarder() {
+        changerImage("travail_garde.jpg");
         addLines(["", "Vous prenez votre poste aux portes nord de la ville à la tombée de la nuit."]);
         if (randint(1, 2) === 1) {
             s.OR += 14;
@@ -1144,6 +1256,7 @@
     }
 
     function taverne() {
+        changerImage("taverne.jpg");
         addLines(["", "── LA TAVERNE DU LOUP GRIS ──", "L'endroit est chaleureux et bruyant. Un ménestrel joue une ballade mélancolique dans un coin.", "L'air sent la bière, la fumée de pipe et les ragoûts mijotés.", "Des aventuriers jouent aux dés, échangent des rumeurs ou soignent leurs blessures dans un verre de vin fort.", "Que faites-vous ?"]);
         addChoice(`🎲 Jouer aux dés contre d'autres aventuriers (mise min. 5 or) — Or : ${s.OR}`, () => processLieu(141));
         addChoice("👂 Boire un verre et écouter les rumeurs (3 or)", () => processLieu(142));
@@ -1153,6 +1266,7 @@
     }
 
     function gamesDes() {
+        changerImage("taverne.jpg");
         if (s.OR < 5) { addLines(["", "Vous n'avez pas assez d'or pour jouer. Le croupier vous chasse de la table d'un geste dédaigneux."]); addChoice("Retour", () => processLieu(140)); return; }
         addLines(["", "Vous vous installez à la table des dés. Combien misez-vous ?"]);
         [5, 10, 20, 40].filter(m => m <= s.OR).forEach(m => addChoice(`Miser ${m} pièces d'or`, () => lancerDes(m)));
@@ -1171,14 +1285,15 @@
     }
 
     function rumeurs() {
+        changerImage("taverne.jpg");
         if (s.OR < 3) { addLines(["", "Pas assez d'or pour offrir une tournée. Les aventuriers ne parleront pas pour rien."]); addChoice("Retour", () => processLieu(140)); return; }
         s.OR -= 3;
         const list = [
-            "\"Le Mage Noir aurait une faiblesse : une gemme de lumière peut percer ses défenses. On en trouve dans les mines au-delà des falaises...\"", 
-            "\"Méfiez-vous des Marécages Putrides après les portes. L'eau y est aussi perfide que l'air qu'on y respire...\"", 
-            "\"Le Mage Noir se nourrit des âmes des morts. Plus vous tardez, plus il devient puissant. Chaque nuit perdue est une âme de plus pour lui.\"", 
-            "\"Si vous croisez la Sorcière des Tourbières dans les marécages, ne la mettez pas en colère. Elle aime les devinettes...\"", 
-            "\"Un trésor fabuleux est caché dans la crypte sous la vieille tour. Celui qui l'a cherché n'est jamais revenu...\"", 
+            "\"Le Mage Noir aurait une faiblesse : une gemme de lumière peut percer ses défenses. On en trouve dans les mines au-delà des falaises...\"",
+            "\"Méfiez-vous des Marécages Putrides après les portes. L'eau y est aussi perfide que l'air qu'on y respire...\"",
+            "\"Le Mage Noir se nourrit des âmes des morts. Plus vous tardez, plus il devient puissant. Chaque nuit perdue est une âme de plus pour lui.\"",
+            "\"Si vous croisez la Sorcière des Tourbières dans les marécages, ne la mettez pas en colère. Elle aime les devinettes...\"",
+            "\"Un trésor fabuleux est caché dans la crypte sous la vieille tour. Celui qui l'a cherché n'est jamais revenu...\"",
             "\"Ne nagez jamais dans le Lac Noir. Quelque chose d'immense, fait d'écailles et de haine, rôde sous la surface.\""
         ];
         addLines(["", "Vous offrez une tournée. Les langues se délient.", `Un vieux mercenaire se penche vers vous en chuchotant : ${list[randint(0, 5)]}`]);
@@ -1186,6 +1301,7 @@
     }
 
     function repasRoi() {
+        changerImage("taverne.jpg");
         if (s.OR < 8) { addLines(["", "Vous n'avez pas les moyens de vous offrir ce festin."]); addChoice("Retour", () => processLieu(140)); return; }
         s.OR -= 8; s.PV = Math.min(s.PV + 6, s.maxPV);
         addLines(["", "Un festin de roi : agneau rôti, pain chaud, fromage affiné et bière fraîche.", "Vous vous levez de table requinqué et prêt à en découdre. (+6 PV)"]);
@@ -1193,19 +1309,20 @@
     }
 
     function brasDeFer() {
+        changerImage("taverne.jpg");
         if (s.OR < 5) { addLines(["", "L'entrée coûte 5 pièces d'or. Vous n'avez pas les moyens."]); addChoice("Retour", () => processLieu(140)); return; }
         if (s.ville.brasDeFerAujourdhui) { addLines(["", "Les lutteurs refusent de vous affronter à nouveau aujourd'hui. Laissez-leur le temps de se remettre ! Revenez demain."]); addChoice("Retour", () => processLieu(140)); return; }
-        
+
         s.OR -= 5;
-        s.ville.brasDeFerAujourdhui = true; 
+        s.ville.brasDeFerAujourdhui = true;
         const score = randint(1, 20) + s.PF;
         addLines(["", "Vous affrontez successivement plusieurs adversaires au bras de fer, sous les clameurs de la foule."]);
-        
+
         if (score >= 18) {
             s.OR += 30;
             if (!s.ville.brasDeFerGagne) {
                 s.PF += 1;
-                s.ville.brasDeFerGagne = true; 
+                s.ville.brasDeFerGagne = true;
                 addLines(["Vous écrasez tous vos adversaires ! La foule vous acclame.", "Prix : 30 pièces d'or. Et une réputation de colosse. +1 PF permanent !"]);
             } else {
                 addLines(["Vous écrasez tous vos adversaires une fois de plus ! La foule scande votre nom.", "Prix : 30 pièces d'or. Vous confirmez votre titre de champion incontesté !"]);
@@ -1217,12 +1334,14 @@
     }
 
     function nuit() {
+        changerImage("nuit.jpg");
         addLines(["", "La nuit tombe sur Kair Morten. Les torches s'allument dans les rues.", "Où dormez-vous cette nuit ?"]);
         addChoice(`Chambre à l'auberge du Griffon Boiteux (5 or) — Restaure vos Max PV et PA`, () => processLieu(35));
         addChoice("Dormir dehors dans une ruelle (gratuit) — +2 PV", () => processLieu(36));
     }
 
     function quitterVille() {
+        changerImage("depart_ville.jpg");
         addLines([
             "", "────────────────────────────────────────────────────────────────────────────────",
             "Vous bouclez votre sac, vérifiez vos armes une dernière fois, et prenez une grande inspiration.",
@@ -1239,6 +1358,7 @@
     // --- LES MARÉCAGES PUTRIDES ---
 
     function entreeMarecage() {
+        changerImage("marecage.jpg");
         addLines([
             "", "Le paysage change radicalement. La végétation verdoyante laisse place à une forêt d'arbres morts, tordus comme des bras agonisants.",
             "Une brume épaisse, teintée d'un vert maladif, rampe sur le sol fangeux. L'air est lourd, saturé par l'odeur âcre du soufre et de la putréfaction végétale.",
@@ -1252,8 +1372,9 @@
     }
 
     function cheminPlanches() {
+        changerImage("marecage.jpg");
         addLines(["", "Vous vous engagez prudemment sur les planches glissantes. Le bois craque sinistrement sous votre poids.", "Soudain, une planche cède, vous projetant vers les eaux troubles infestées de créatures gélatineuses !"]);
-        
+
         let roll = randint(1, 25);
         if (s.PA >= roll) {
             addLines(["", "Dans un élan de grâce surhumaine, vous bondissez sur le poteau suivant juste avant que la structure ne s'effondre.", "Vous parvenez à traverser la zone la plus dangereuse sans égratignure !"]);
@@ -1267,6 +1388,7 @@
     }
 
     function vaseEpaisse() {
+        changerImage("marecage.jpg");
         s.PV -= 1; s.PA = Math.max(1, s.PA - 1);
         addLines([
             "", "La boue vous monte rapidement jusqu'aux genoux, puis jusqu'aux cuisses.",
@@ -1275,7 +1397,7 @@
             "L'aventurier est mort depuis longtemps, mais une sacoche en cuir semble intacte à sa ceinture. Cependant, l'eau autour de lui bouillonne étrangement..."
         ]);
         if (s.PV <= 0) return declareDefeat("L'épuisement des marais");
-        
+
         addChoice("fouiller le cadavre", () => {
             if (randint(1, 2) === 1) {
                 s.inventory.potions += 1; s.OR += 12;
@@ -1297,6 +1419,7 @@
     }
 
     function arbrePendu() {
+        changerImage("sorciere.jpg");
         addLines([
             "", "La brume s'entrouvre pour dévoiler une clairière lugubre, dominée par un saule pleureur d'une taille colossale.",
             "Ses branches retombent comme de longs bras squelettiques, soutenant des dizaines de cages de fer rouillé. À l'intérieur, des ossements humains cliquettent au gré du vent froid.",
@@ -1310,6 +1433,7 @@
     }
 
     function enigmeSorciere() {
+        changerImage("sorciere.jpg");
         addLines([
             "", "La Mégère révèle des dents noircies dans un sourire malsain. Elle s'approche, l'odeur de son haleine vous donnant la nausée.",
             "« Écoute bien, mortel... »",
@@ -1322,7 +1446,7 @@
         const wrapper = document.createElement('div'); wrapper.className = "input-group";
         const inp = document.createElement('input'); inp.type = "text"; inp.placeholder = "Votre réponse...";
         const btn = document.createElement('button'); btn.className = "btn-main"; btn.style.margin = "0"; btn.innerText = "→";
-        
+
         btn.onclick = () => {
             const v = inp.value.trim().toUpperCase();
             clearControls();
@@ -1348,6 +1472,7 @@
     }
 
     function combatSorciere() {
+        changerImage("sorciere.jpg");
         startCombat("La Sorcière des Tourbières", 28, 4, () => {
             addLines([
                 "", "Dans un dernier râle agonisant, la sorcière s'effondre dans son propre chaudron qui se renverse dans un sifflement de fumée.",
@@ -1360,6 +1485,7 @@
     }
 
     function lacNoir() {
+        changerImage("lac_noir.jpg");
         addLines([
             "", "Le sentier boueux débouche sur une immense nappe d'eau stagnante : le Lac Noir. Sa surface, parfaitement lisse, est d'un noir d'encre oppressant.",
             "Il n'y a aucun bruit. La rive opposée est à peine visible à travers la brume éternelle.",
@@ -1373,7 +1499,7 @@
                 addChoice("Se préparer à l'impact", () => processLieu(208));
             });
         }
-        
+
         addChoice("Tenter de nager à travers l'eau poisseuse", () => {
             s.PV -= 3;
             addLines([
@@ -1388,6 +1514,7 @@
     }
 
     function monstreLac() {
+        changerImage("hydre.jpg");
         addLines(["", "L'eau explose et une créature gigantesque émerge : L'Hydre Fangeuse, une aberration croisée entre un serpent géant et un crocodile purulent !"]);
         startCombat("L'Hydre Fangeuse", 45, 5, () => {
             s.inventory.armor = { bonus: 12, hasIt: true };
@@ -1401,6 +1528,7 @@
     }
 
     function coeurPutride() {
+        changerImage("poison.jpg");
         addLines([
             "", "Vous pénétrez maintenant dans la zone la plus ancienne et corrompue des marais : le Cœur Putride.",
             "Ici, la brume verte n'est plus seulement aveuglante, elle est caustique. Les vapeurs qui s'échappent des crevasses brûlent vos yeux et votre gorge."
@@ -1426,6 +1554,7 @@
     }
 
     function autelOublie() {
+        changerImage("autel.jpg");
         addLines([
             "", "Le brouillard commence enfin à s'éclaircir. Devant vous se dresse une structure incongrue au milieu de ce chaos végétal :",
             "Un autel de pierre noire, parfaitement lisse, dédié à une divinité dont le nom a été effacé par le temps et la vase.",
@@ -1441,7 +1570,7 @@
             if (s.PV <= 0) return declareDefeat("L'hémorragie rituelle");
             addChoice("Reprendre la route", () => processLieu(211));
         });
-        
+
         addChoice("Faire couler votre sang sur l'autel (-2 PV) pour un bonus d'Agilité (+2 PA Max)", () => {
             s.PV -= 2; s.maxPA += 2; s.PA += 2;
             addLines([
@@ -1459,6 +1588,7 @@
     }
 
     function sortieMarecage() {
+        changerImage("forteresse.jpg");
         addLines([
             "", "────────────────────────────────────────────────────────────────────────────────",
             "Le sol spongieux sous vos bottes laisse soudainement place à de la roche dure et coupante.",
@@ -1472,7 +1602,7 @@
             "────────────────────────────────────────────────────────────────────────────────"
         ]);
         s.isPlaying = false;
-        
+
         const btn = document.createElement('button');
         btn.className = "btn-main"; btn.innerText = "A SUIVRE - REJOUER";
         btn.onclick = startGame;
