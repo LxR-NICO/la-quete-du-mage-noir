@@ -768,7 +768,7 @@
     }
 
     function pecher() {
-        changerImage("pecher.jpg");
+        changerImage("lac.jpg");
         addLines(["", "Vous vous dirigez vers le lac. Vous apercevez progressivement ses plages de cailloux et sa surface étincelante.", "Vous réalisez alors que cette dernière est entièrement recouverte d'une épaisse couche de glace."]);
         addChoice("Continuer vers le lac", () => processLieu(16));
         addChoice("Aller à la chasse aux marmottes", () => processLieu(9));
@@ -851,7 +851,7 @@
     }
 
     function lac() {
-        changerImage("lac.jpg");
+        changerImage("pecher.jpg");
         s.PV = Math.min(s.PV + 2, s.maxPV);
         addLines(["", "Vous décidez de ramasser un caillou, ainsi qu'un bâton et quelques insectes qui vous serviront d'appâts.", "Avec le bâton et votre corde, vous confectionnez une canne à pêche, au bout de laquelle vous attachez les insectes et vers de terre.", "Vous brisez la glace avec le caillou, et commencez à attendre patiemment que quelque chose morde.", "Au bout d'une demi-heure, vous avez attrapé 2 poissons, vous offrant la certitude d'un repas consistant (+2 PV)."]);
         if (randint(1, 5) === 1) {
