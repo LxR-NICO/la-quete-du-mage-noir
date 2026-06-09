@@ -99,7 +99,7 @@
             position: relative;
         }
 
-        /* Zone de texte défilante (reprend le rôle de ton log-container) */
+        /* Zone de texte défilante */
         #log-container {
             width: 100%;
             height: 100%;
@@ -109,6 +109,8 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            /* Force le fond à être transparent pour voir le parchemin */
+            background: transparent !important; 
         }
 
         .log-line { margin: 3px 0; color: #2b1f11; font-size: 15px; line-height: 1.6; text-align: justify; animation: fadeIn 0.15s ease-in; }
