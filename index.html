@@ -782,12 +782,13 @@
         addLines(["", "Vous vous engagez sur un sentier rocailleux et très pentu.", "Soudain, un grondement sourd résonne au-dessus de vous. Des rochers se détachent de la paroi !"]);
         if (s.PA >= roll) {
             addLines(["", "Grâce à votre incroyable agilité, vous esquivez l'éboulement de justesse et atteignez le sommet sain et sauf !"]);
-            addChoice("Continuer vers le bâtiment au loin", () => processLieu(17));
+            addChoice("Continuer votre ascension ", () => processLieu(17));
+            addChoice("Rebrousser chemin et prendre la route dégagée", () => { s.montagneFaite = true; processLieu(19); });
         } else {
             s.PV -= 1; s.PA = Math.max(1, s.PA - 1);
             addLines(["", "Vous n'êtes pas assez rapide. Un rocher vous heurte violemment l'épaule, et vous trébuchez dans la poussière (-1 PV, -1 PA)."]);
             if (s.PV <= 0) return declareDefeat("L'éboulement");
-            addChoice("Continuer l'ascension (vers le temple)", () => processLieu(17));
+            addChoice("Continuer votre ascension ", () => processLieu(17));
             addChoice("Rebrousser chemin et prendre la route dégagée", () => { s.montagneFaite = true; processLieu(19); });
         }
     }
