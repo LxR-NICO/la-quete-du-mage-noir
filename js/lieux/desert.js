@@ -17,7 +17,7 @@ function nomade() {
 }
 
 function combatNomade() {
-    changerImage("combat_nomade.jpg");
+    changerImage("nomade.jpg");
     startCombat("Le nomade", 6, 1, () => {
         s.OR += 1; s.PV -= 3;
         addLines(["", "En fouillant son cadavre, vous trouvez 1 pièce d'or, ainsi qu'une bouteille d'eau malheureusement vide.", "Les effets de la déshydratation commencent à se faire sentir (-2 PV).", "Vous enfourchez votre nouvelle monture et continuez à travers le désert.", "Un énorme scorpion mutant, surgissant de l'obscurité, vous renverse du dos de votre dromadaire."]);
@@ -26,7 +26,7 @@ function combatNomade() {
 }
 
 function echangeNomade() {
-    changerImage("echange_nomade.jpg");
+    changerImage("nomade.jpg");
     s.PV -= 1; s.PV = Math.min(s.PV + 2, s.maxPV);
     addLines(["", "Vous vous approchez en lui faisant des signes de main. Le vagabond vous confie une bouteille d'eau.", "Vous buvez goulûment, ravi d'avoir évité la déshydratation. (+2 PV)", "Il vous offre également son dromadaire, que vous acceptez avec de chaleureux remerciements.", "Un énorme scorpion mutant, surgissant de l'obscurité, vous renverse du dos de votre dromadaire."]);
     testChuteDromadaire();
@@ -83,7 +83,7 @@ function tempeteSable() {
 }
 
 function tempeteAbri() {
-    changerImage("tempete.jpg");
+    changerImage("tempeteabris.jpg");
     s.PV -= 1;
     addLines(["", "Vous vous aplatissez derrière votre dromadaire. Le sable s'infiltre partout (-1 PV).", "Votre dromadaire s'est enfui dans la tempête. Vous êtes désormais à pied.", "Les Falaises de Keth se profilent au loin."]);
     if (s.PV <= 0) return declareDefeat("La tempête de sable");
