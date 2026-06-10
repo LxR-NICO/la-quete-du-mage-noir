@@ -67,7 +67,7 @@ body, html {
 .parchment-area {
     width: 100%;
     height: calc(50% - 17.5px);
-    background-image: url('../parcheminportrait.jpg');
+    background-image: url('../image/parcheminportrait.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
