@@ -49,7 +49,7 @@ function suiteForetApresDealer() {
 }
 
 function bandits() {
-    changerImage("bandits.jpg");
+    changerImage("bandit.jpg");
     addLines(["", "Vous continuez votre chemin dans cette direction, et le sentier s'élargit.", "Vous avancez, réjoui de pouvoir enfin progresser sans trébucher ni vous faire fouetter par les basses branches.", "Cependant, cette paix intérieure ne dura pas longtemps : le chemin se rétrécit à quelques mètres de vous.", "Vous vous arrêtez, hésitant, lorsqu'un groupe de 3 bandits vous saute brusquement dessus !"]);
     const roll = randint(1, 20);
     if (s.PA >= roll) { addLines(["", "Votre instinct de guerrier entre en jeu ! Vous esquivez l'attaque superficiellement (-1 PV)."]); s.PV -= 1; }
@@ -76,7 +76,7 @@ function transition() {
         addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Un large fleuve vous contraint à aller vers l'Est. La végétation dense s'impose devant vous."]);
         addChoice("Continuer", () => processLieu(3));
     } else if ((s.gobelinFait && s.banditsFait) && !s.montagneFaite) {
-        changerImage("transmontagne.jpg");
+        changerImage("transition.jpg");
         addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Un large fleuve vous contraint à aller vers le Nord. Les plaines enneigées s'étalent sous vos yeux."]);
         addChoice("Continuer", () => processLieu(2));
     }
