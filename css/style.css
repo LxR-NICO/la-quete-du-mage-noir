@@ -67,13 +67,13 @@ body, html {
 .parchment-area {
     width: 100%;
     height: calc(50% - 17.5px);
-    background-color: #e6d5b8;
     background-image: url('../parcheminportrait.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     box-shadow: inset 0 0 35px rgba(60,43,22,0.5);
     position: relative;
+    filter: brightness(1.1); /* éclaircit un peu si besoin */
 }
 
 #log-container {
@@ -82,7 +82,10 @@ body, html {
     padding: 20px; padding-bottom: 30px;
     box-sizing: border-box;
     display: flex; flex-direction: column;
-    background: transparent !important;
+    background: transparent;
+}
+#log-text {
+    background: transparent;
 }
 
 .log-line { margin: 3px 0; color: #2b1f11; font-size: 15px; line-height: 1.6; text-align: justify; animation: fadeIn 0.15s ease-in; }
