@@ -83,7 +83,7 @@ function tempeteSable() {
 }
 
 function tempeteAbri() {
-    changerImage("tempeteabris.jpg");
+    changerImage("tempete.jpg");
     s.PV -= 1;
     addLines(["", "Vous vous aplatissez derrière votre dromadaire. Le sable s'infiltre partout (-1 PV).", "Votre dromadaire s'est enfui dans la tempête. Vous êtes désormais à pied.", "Les Falaises de Keth se profilent au loin."]);
     if (s.PV <= 0) return declareDefeat("La tempête de sable");
@@ -99,14 +99,14 @@ function tempeteFuite() {
 }
 
 function tempeteRocher() {
-    changerImage("tempete.jpg");
+    changerImage("tempeteabris.jpg");
     s.OR += 5; s.maxPA += 1; s.PA += 1;
     addLines(["", "Votre instinct vous guide vers un amas rocheux. Vous vous faufilez juste à temps dans une crevasse.", "Dans la crevasse, un vieux feu de camp abandonné. Sous une pierre plate : 5 pièces d'or et un parchemin.", "C'est une carte partielle des Falaises de Keth. (+1 PA Max)", "Une fois la tempête passée, vous reprenez la route."]);
     addChoice("Continuer vers les falaises", () => processLieu(33));
 }
 
 function falaisesKeth() {
-    changerImage("falaises.jpg");
+    changerImage("falaise.jpg");
     addLines(["", "Les Falaises de Keth se dressent devant vous comme une muraille naturelle de grès rouge sang.", "Un chemin taillé à même la roche serpente le long de la falaise.", "Alors que vous commencez l'ascension, une ombre immense vous survole en poussant un cri strident.", "Un Griffon des sables fond sur vous depuis les hauteurs !"]);
     startCombat("Le Griffon des sables", 18, 3, () => {
         s.inventory.goldenFeather = true;
