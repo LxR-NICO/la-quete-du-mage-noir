@@ -8,7 +8,7 @@ function foret() {
 }
 
 function foretGauche() {
-    changerImage("foret.jpg");
+    changerImage("gobelin.jpg");
     addLines(["", "Vous avancez vaillamment dans cette direction, le cou baigné d'une chaleur timide.", "Au bout de quelques kilomètres, une petite créature s'approche docilement de vous. Elle semble vous observer."]);
     addChoice("Tirer votre arme pour l'attaquer",                        () => processLieu(13));
     addChoice("Tenter d'établir la communication avec cette créature",   () => processLieu(14));
@@ -16,14 +16,14 @@ function foretGauche() {
 }
 
 function combatGobelin() {
-    changerImage("combat_gobelin.jpg");
+    changerImage("gobelin.jpg");
     s.g = 0;
     addLines(["", "Vous sortez votre épée de son étui, et armez votre bras afin de lui porter un coup fatal.", "Mais le gobelin, au moment même où la lame allait le trancher en deux, esquive habilement l'arme et détale dans la forêt en ricanant.", "Vous êtes surpris par cette réaction inattendue, mais reprenez vos esprits et décidez d'aller de l'avant."]);
     addChoice("Continuer", () => suiteForetApresDealer());
 }
 
 function dealChampignons() {
-    changerImage("marchand_gobelin.jpg");
+    changerImage("gobelin.jpg");
     addLines(["", "Vous vous avancez vers le gobelin.", "Ce dernier sort alors de dessous son manteau une panoplie d'objets à l'apparence douteuse, en s'exclamant : \"Tu veux des champignons ?\".", "Ces champignons aux nombreux bienfaits vous coûteront 2 pièces d'or par unité, mais vous permettront de regagner 2 PV et 1 PA si vous les mangez lors d'un combat.", `(Or disponible : ${s.OR}) — Combien en prenez-vous ?`]);
     const max = Math.floor(s.OR / 2);
     for (let i = 0; i <= Math.min(max, 6); i++) {
@@ -66,15 +66,17 @@ function bandits() {
 }
 
 function transition() {
-    changerImage("transition.jpg");
     if (s.montagneFaite && s.gobelinFait && s.banditsFait) {
+        changerImage("transdesert.jpg");
         addLines(["", "Jusqu'ici, vous avez survécu et paré le danger. Restez tout de même sur vos gardes.", "Au fur et à mesure que vous avancez, les arbres se raréfient, au profit de la terre desséchée et du sable.", "Vous réalisez alors que vous allez devoir poursuivre votre aventure à travers le tristement célèbre désert de la mort.", "Au creux d'un amas rocheux, vous trouvez une bâche.", "Cependant, n'ayant toujours pas de sac pour transporter vos affaires, vous ne pouvez emporter qu'un seul objet entre votre corde et cette bâche."]);
         addChoice("Garder la corde",  () => processLieu(20));
         addChoice("Prendre la bâche", () => processLieu(21));
     } else if (s.montagneFaite && (!s.gobelinFait || !s.banditsFait)) {
+        changerImage("transition.jpg");
         addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Un large fleuve vous contraint à aller vers l'Est. La végétation dense s'impose devant vous."]);
         addChoice("Continuer", () => processLieu(3));
     } else if ((s.gobelinFait && s.banditsFait) && !s.montagneFaite) {
+        changerImage("transmontagne.jpg");
         addLines(["", "Le sentier s'élargit et vous sentez enfin la chaleur des rayons du soleil sur votre peau.", "Un large fleuve vous contraint à aller vers le Nord. Les plaines enneigées s'étalent sous vos yeux."]);
         addChoice("Continuer", () => processLieu(2));
     }
