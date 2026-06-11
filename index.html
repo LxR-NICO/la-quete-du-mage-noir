@@ -10,10 +10,14 @@
 <div id="game-container">
     <div class="game-title-overlay">LA QUÊTE DU MAGE NOIR</div>
     <div id="stats-bar"></div>
+
+    <!-- Colonne gauche : image -->
     <div class="image-area">
         <img id="game-image" src="https://raw.githubusercontent.com/LxR-NICO/la-quete-du-mage-noir/main/image/ruine.jpg" alt="Illustration de la scène">
         <div class="image-frame"></div>
     </div>
+
+    <!-- Colonne centre : narration (parchemin) -->
     <div class="parchment-area">
         <div id="log-container">
             <div id="log-text">
@@ -25,9 +29,16 @@
                     <button class="btn-main" onclick="startGame()">COMMENCER</button>
                 </div>
             </div>
-            <div id="controls"></div>
+            <!-- Sur mobile, #controls reste ici dans le flux normal -->
+            <div id="controls" class="mobile-controls"></div>
         </div>
     </div>
+
+    <!-- Colonne droite : boutons de choix (visible uniquement PC) -->
+    <div id="controls-column">
+        <!-- Les boutons de choix y seront déplacés dynamiquement sur PC -->
+    </div>
+
 </div>
 
 <script src="js/main.js"></script>
@@ -38,5 +49,38 @@
 <script src="js/lieux/ville.js"></script>
 <script src="js/lieux/marecage.js"></script>
 <script src="js/router.js"></script>
+
+<script>
+    // ──────────────────────────────────────────────
+    // RESPONSIVE : déplace #controls selon la taille
+    // ──────────────────────────────────────────────
+    const BREAKPOINT = 768;
+
+    function isDesktop() {
+        return window.innerWidth >= BREAKPOINT;
+    }
+
+    function placeControls() {
+        const controls  = document.getElementById('controls');
+        const colDroite = document.getElementById('controls-column');
+        const logCont   = document.getElementById('log-container');
+
+        if (isDesktop()) {
+            // Sur PC : les boutons vont dans la colonne droite
+            if (controls.parentElement !== colDroite) {
+                colDroite.appendChild(controls);
+            }
+        } else {
+            // Sur mobile : les boutons restent dans #log-container
+            if (controls.parentElement !== logCont) {
+                logCont.appendChild(controls);
+            }
+        }
+    }
+
+    // Au chargement et à chaque redimensionnement
+    placeControls();
+    window.addEventListener('resize', placeControls);
+</script>
 </body>
 </html>
