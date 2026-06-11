@@ -35,7 +35,7 @@ function onWinOurs() {
 }
 
 function montagneEpuise() {
-    changerImage("montagne.jpg");
+    changerImage("onWinOurs.jpeg");
     s.PA = Math.max(1, s.PA - 2);
     addLines(["", "Vous reprenez votre chemin. La pause attendra.", "Après de longues heures d'effort, vous arrivez enfin au sommet de la montagne. Le vent frais du Nord fouette votre visage.", "Épuisé, vous vous écroulez au sol et la fatigue accumulée vous fait perdre connaissance (-2 PA).", "Lorsque vous ouvrez les yeux, le soleil est déjà haut dans le ciel.", "Cependant, vous sentez votre ventre gargouiller. Vous n'avez plus une minute à perdre, il faut vous mettre en quête de nourriture."]);
     addChoice("Aller à la chasse aux marmottes à l'aide de pièges", () => processLieu(9));
