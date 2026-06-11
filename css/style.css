@@ -156,54 +156,61 @@ input[type=text] {
 /* ============================================================
    LAYOUT PC — desktop (≥ 768px)
    Disposition : [IMAGE (50%) | PARCHEMIN+BOUTONS (50%)]
-   Même logique que mobile mais en deux colonnes côte à côte
    ============================================================ */
 @media (min-width: 768px) {
 
     body, html { overflow: hidden; }
 
-    /* Conteneur : deux colonnes + stats en haut */
+    /* Conteneur principal en colonne pour isoler la barre de stats en haut */
     #game-container {
         max-width: 100%;
         width: 100%;
         height: 100vh;
-        flex-direction: row;
-        flex-wrap: wrap;
+        display: flex;
+        flex-direction: column; /* Aligne la barre de stats puis la zone de contenu */
+        flex-wrap: nowrap;     /* Interdiction formelle de passer à la ligne */
         align-items: stretch;
     }
 
-    /* Stats : bande pleine largeur en haut */
+    /* Stats : occupe toute la largeur en haut */
     #stats-bar {
         width: 100%;
-        order: 0;
-        flex-shrink: 0;
         height: 40px;
         font-size: 13px;
         padding: 0 20px;
+        flex-shrink: 0;
     }
     #stats-bar span { margin-right: 20px; }
 
     /* Titre overlay masqué sur PC */
     .game-title-overlay { display: none; }
 
-    /* ── Colonne gauche : image pleine hauteur ── */
+    /* Nouveau conteneur pour forcer l'image et le parchemin à se mettre côte à côte */
+    /* NOTE : Si vous n'avez pas cette div dans votre HTML, les deux propriétés ci-dessous 
+       vont s'appliquer directement aux colonnes grâce au changement de flex-direction */
+    
+    /* ── Colonne gauche : image ── */
     .image-area {
-        order: 1;
         width: 50%;
         height: calc(100vh - 40px);
         border-bottom: none;
         border-right: 3px double #3a2a10;
         flex-shrink: 0;
+        position: absolute;
+        left: 0;
+        bottom: 0;
     }
 
-    /* ── Colonne droite : parchemin + boutons (même structure que mobile) ── */
+    /* ── Colonne droite : parchemin + boutons ── */
     .parchment-area {
-        order: 2;
         width: 50%;
         height: calc(100vh - 40px);
-        flex-shrink: 0;
         border-bottom: none;
+        flex-shrink: 0;
         filter: brightness(1.1);
+        position: absolute;
+        right: 0;
+        bottom: 0;
     }
 
     /* La colonne fantôme PC n'est plus utilisée */
