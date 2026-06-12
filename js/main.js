@@ -73,24 +73,31 @@ function printLine(text) {
     uiLogText.appendChild(div);
 }
 
+let s_currentSceneAnchor = null;
+
 function addLines(lines) {
     if (lines.length === 0) return;
-    const anchor = document.createElement('div');
-    document.getElementById('log-text').appendChild(anchor);
+    // Si on n'a pas encore d'ancre pour la "scène" courante (premier bloc depuis processLieu),
+    // on en crée une et on retiendra TOUJOURS celle-ci pour le scroll.
+    if (!s_currentSceneAnchor) {
+        s_currentSceneAnchor = document.createElement('div');
+        document.getElementById('log-text').appendChild(s_currentSceneAnchor);
+    } else {
+        // Pour les blocs suivants (ex: résultat du test d'agilité), on ajoute juste les lignes
+        // sans déplacer le point de scroll.
+    }
     lines.forEach(printLine);
     updateStats();
-    setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+    setTimeout(() => s_currentSceneAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+    autoSave();
+}
+
+// Appelé au début de chaque nouveau "lieu" pour réinitialiser l'ancre de scroll
+function resetSceneAnchor() {
+    s_currentSceneAnchor = null;
 }
 
 function clearControls() { uiControls.innerHTML = ""; }
-
-function addChoice(label, onClick, styleClass = "btn-choice") {
-    const btn = document.createElement('button');
-    btn.className = styleClass;
-    btn.innerHTML = (styleClass === "btn-choice" ? "▸ " : "› ") + label;
-    btn.onclick = () => { clearControls(); onClick(); };
-    uiControls.appendChild(btn);
-}
 
 // ==========================================
 // LEVEL UP
@@ -183,4 +190,46 @@ function startGame() {
     ]);
     addChoice("Passer par les montagnes enneigées au Nord", () => processLieu(2));
     addChoice("Passer la forêt ténébreuse à l'Est",         () => processLieu(3));
+}
+
+// ==========================================
+// SAUVEGARDE AUTOMATIQUE
+// ==========================================
+const SAVE_KEY = "quete_mage_noir_save";
+
+function autoSave() {
+    if (!s || !s.isPlaying) return;
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    } catch (e) {
+        console.warn("Sauvegarde impossible :", e);
+    }
+}
+
+function loadSave() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+    } catch (e) {
+        return null;
+    }
+}
+
+function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+function tryResume() {
+    const saved = loadSave();
+    if (saved && saved.isPlaying) {
+        s = saved;
+        resetSceneAnchor();
+        uiLogText.innerHTML = "";
+        clearControls();
+        addLines(["", "── Reprise de votre aventure... ──"]);
+        addChoice("Continuer là où vous en étiez", () => processLieu(s.lieu), "btn-main");
+        addChoice("Recommencer une nouvelle partie", startGame, "btn-choice");
+        return true;
+    }
+    return false;
 }
