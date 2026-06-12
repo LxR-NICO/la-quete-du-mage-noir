@@ -10,6 +10,41 @@ const GITHUB_BRANCH   = "main";
 // ==========================================
 let s = {};
 
+
+const SAVE_KEY = "mageNoir_save";
+
+function autoSave() {
+    if (!s || !s.isPlaying || s.combat) return;
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    } catch (e) {
+        console.warn("Sauvegarde impossible :", e);
+    }
+}
+
+function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+function tryResume() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const saved = JSON.parse(raw);
+        if (!saved || !saved.isPlaying) return false;
+        s = saved;
+        if (s.combat) s.combat = null;
+        uiLogText.innerHTML = "";
+        clearControls();
+        addLines(["", "────────────────────────────────────────────────────────────────────────────────",
+            "Partie reprise là où vous l'aviez laissée.",
+            "────────────────────────────────────────────────────────────────────────────────"]);
+        processLieu(s.lieu);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 // ==========================================
 // RÉFÉRENCES DOM
 // ==========================================
@@ -77,18 +112,19 @@ function addLines(lines) {
     if (lines.length === 0) return;
     const anchor = document.createElement('div');
     document.getElementById('log-text').appendChild(anchor);
-
-
-
-
-
-
-
     lines.forEach(printLine);
     updateStats();
+    autoSave();
     setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
-
 }
+
+
+
+
+
+
+
+
 
 function clearControls() { uiControls.innerHTML = ""; }
 
@@ -135,6 +171,7 @@ function checkLevelUp(nextAction) {
 function declareDefeat(enemyName) {
     changerImage("defaite.jpg");
     s.isPlaying = false;
+    clearSave();
     if (enemyName) addLines(["", `${enemyName} a finalement pris l'avantage, et vous succombez de vos blessures.`, "Ainsi, dans la honte et la faiblesse, s'achève votre quête."]);
     addLines([
         "", "────────────────────────────────────────────────────────────────────────────────",
@@ -195,3 +232,15 @@ function startGame() {
     addChoice("Passer la forêt ténébreuse à l'Est",         () => processLieu(3));
 }
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) {
+            const saved = JSON.parse(raw);
+            if (saved && saved.isPlaying) {
+                document.getElementById('resume-btn').style.display = "block";
+            }
+        }
+    } catch (e) {}
+});
