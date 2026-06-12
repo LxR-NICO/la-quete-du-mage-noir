@@ -132,11 +132,34 @@ function addChoice(label, onClick, styleClass = "btn-choice") {
     const btn = document.createElement('button');
     btn.className = styleClass;
     btn.innerHTML = (styleClass === "btn-choice" ? "▸ " : "› ") + label;
-    btn.onclick = () => { clearControls(); onClick(); };
+    btn.onclick = () => {
+        clearControls();
+        resetAnchor();
+        onClick();
+    };
     uiControls.appendChild(btn);
 }
 
+// ==========================================
+// GESTION DE L'ANCRE DE SCROLL
+// ==========================================
+let currentAnchor = null;
 
+function resetAnchor() {
+    currentAnchor = null;
+}
+
+function addLines(lines) {
+    if (lines.length === 0) return;
+    if (!currentAnchor) {
+        currentAnchor = document.createElement('div');
+        document.getElementById('log-text').appendChild(currentAnchor);
+    }
+    lines.forEach(printLine);
+    updateStats();
+    autoSave();
+    setTimeout(() => currentAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+}
 
 // ==========================================
 // LEVEL UP
@@ -212,6 +235,7 @@ function startGame() {
     };
     uiLogText.innerHTML = "";
     clearControls();
+    resetAnchor();
     addLines([
         "────────────────────────────────────────────────────────────────────────────────",
         "Soyez le bienvenu, jeune homme.... ou femme/non binaire/ trans/ gender fluid/hélicoptère de combat...., en cet hiver glacial. Votre famille et votre clan ont été décimés par un terrible Mage Noir.",
