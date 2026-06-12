@@ -112,16 +112,17 @@ function addLines(lines) {
     if (lines.length === 0) return;
     const anchor = document.createElement('div');
     document.getElementById('log-text').appendChild(anchor);
-
-
-
-
-
-
-
     lines.forEach(printLine);
     updateStats();
+    autoSave();
     setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+}
+
+
+
+
+
+
 
 }
 
@@ -170,6 +171,7 @@ function checkLevelUp(nextAction) {
 function declareDefeat(enemyName) {
     changerImage("defaite.jpg");
     s.isPlaying = false;
+    clearSave();
     if (enemyName) addLines(["", `${enemyName} a finalement pris l'avantage, et vous succombez de vos blessures.`, "Ainsi, dans la honte et la faiblesse, s'achève votre quête."]);
     addLines([
         "", "────────────────────────────────────────────────────────────────────────────────",
