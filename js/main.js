@@ -232,3 +232,15 @@ function startGame() {
     addChoice("Passer la forêt ténébreuse à l'Est",         () => processLieu(3));
 }
 
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) {
+            const saved = JSON.parse(raw);
+            if (saved && saved.isPlaying) {
+                document.getElementById('resume-btn').style.display = "block";
+            }
+        }
+    } catch (e) {}
+});
