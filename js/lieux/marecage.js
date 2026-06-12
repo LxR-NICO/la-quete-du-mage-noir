@@ -157,6 +157,7 @@ function sortieMarecage() {
         "────────────────────────────────────────────────────────────────────────────────"
     ]);
     s.isPlaying = false;
+    clearSave();
     const btn = document.createElement('button'); btn.className = "btn-main"; btn.innerText = "A SUIVRE - REJOUER"; btn.onclick = startGame;
     uiControls.appendChild(btn);
 }
