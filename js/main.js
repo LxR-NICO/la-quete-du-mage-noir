@@ -99,6 +99,14 @@ function resetSceneAnchor() {
 
 function clearControls() { uiControls.innerHTML = ""; }
 
+
+function addChoice(label, onClick, styleClass = "btn-choice") {
+    const btn = document.createElement('button');
+    btn.className = styleClass;
+    btn.innerHTML = (styleClass === "btn-choice" ? "▸ " : "› ") + label;
+    btn.onclick = () => { clearControls(); onClick(); };
+    uiControls.appendChild(btn);
+
 // ==========================================
 // LEVEL UP
 // ==========================================
