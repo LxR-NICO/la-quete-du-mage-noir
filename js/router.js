@@ -1,6 +1,7 @@
 function processLieu(lieu) {
     if (s.PV <= 0 && !s.combat) return declareDefeat(null);
     checkLevelUp(() => {
+        resetSceneAnchor();
         s.lieu = lieu;
         // Monde 1 - Montagne
         if      (lieu === 2)   montagne();
