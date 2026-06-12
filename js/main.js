@@ -73,32 +73,24 @@ function printLine(text) {
     uiLogText.appendChild(div);
 }
 
-let s_currentSceneAnchor = null;
-
 function addLines(lines) {
     if (lines.length === 0) return;
-    // Si on n'a pas encore d'ancre pour la "scène" courante (premier bloc depuis processLieu),
-    // on en crée une et on retiendra TOUJOURS celle-ci pour le scroll.
-    if (!s_currentSceneAnchor) {
-        s_currentSceneAnchor = document.createElement('div');
-        document.getElementById('log-text').appendChild(s_currentSceneAnchor);
-    } else {
-        // Pour les blocs suivants (ex: résultat du test d'agilité), on ajoute juste les lignes
-        // sans déplacer le point de scroll.
-    }
+    const anchor = document.createElement('div');
+    document.getElementById('log-text').appendChild(anchor);
+
+
+
+
+
+
+
     lines.forEach(printLine);
     updateStats();
-    setTimeout(() => s_currentSceneAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
-    autoSave();
-}
+    setTimeout(() => anchor.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
 
-// Appelé au début de chaque nouveau "lieu" pour réinitialiser l'ancre de scroll
-function resetSceneAnchor() {
-    s_currentSceneAnchor = null;
 }
 
 function clearControls() { uiControls.innerHTML = ""; }
-
 
 function addChoice(label, onClick, styleClass = "btn-choice") {
     const btn = document.createElement('button');
@@ -106,6 +98,9 @@ function addChoice(label, onClick, styleClass = "btn-choice") {
     btn.innerHTML = (styleClass === "btn-choice" ? "▸ " : "› ") + label;
     btn.onclick = () => { clearControls(); onClick(); };
     uiControls.appendChild(btn);
+}
+
+
 
 // ==========================================
 // LEVEL UP
