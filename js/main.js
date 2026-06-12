@@ -10,6 +10,41 @@ const GITHUB_BRANCH   = "main";
 // ==========================================
 let s = {};
 
+
+const SAVE_KEY = "mageNoir_save";
+
+function autoSave() {
+    if (!s || !s.isPlaying || s.combat) return;
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+    } catch (e) {
+        console.warn("Sauvegarde impossible :", e);
+    }
+}
+
+function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+}
+
+function tryResume() {
+    try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return false;
+        const saved = JSON.parse(raw);
+        if (!saved || !saved.isPlaying) return false;
+        s = saved;
+        if (s.combat) s.combat = null;
+        uiLogText.innerHTML = "";
+        clearControls();
+        addLines(["", "────────────────────────────────────────────────────────────────────────────────",
+            "Partie reprise là où vous l'aviez laissée.",
+            "────────────────────────────────────────────────────────────────────────────────"]);
+        processLieu(s.lieu);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
 // ==========================================
 // RÉFÉRENCES DOM
 // ==========================================
