@@ -54,7 +54,7 @@ function arbrePendu() {
 
 function enigmeSorciere() {
     changerImage("sorciere.jpg");
-    addLines(["", "La Mégère révèle ses dents noircies dans un sourire malsain.", "« Écoute bien, mortel... »", "« Je n'ai pas de poumons, mais j'ai cruellement besoin d'air. »", "« Je n'ai pas de bouche, mais l'eau me tue instantanément. »", "« Qui suis-je ? »", "", "(Écrivez votre réponse en majuscules)"]);
+    addLines(["", "La Mégère révèle ses dents noircies dans un sourire malsain.", "« Écoute bien, mortel... »", "« Je n'ai pas de poumons, mais j'ai cruellement besoin d'air. »", "« Je n'ai pas de bouche, mais je dévore tout ce que l'on me donne. »", "« Qui suis-je ? »", "", "(Écrivez votre réponse en majuscules)"]);
     const wrapper = document.createElement('div'); wrapper.className = "input-group";
     const inp = document.createElement('input'); inp.type = "text"; inp.placeholder = "Votre réponse...";
     const btn = document.createElement('button'); btn.className = "btn-main"; btn.style.margin = "0"; btn.innerText = "→";
