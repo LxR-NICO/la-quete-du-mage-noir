@@ -2,7 +2,7 @@
 // ARRIVÉE & HÉBERGEMENT
 // ==========================================
 function arriveeKairMorten() {
-    changerImage("kair_morten.jpg");
+    changerImage("Arive.png");
     addLines(["", "────────────────────────────────────────────────────────────────────────────────",
         "Enfin !!! Vous voilà arrivé à KAIR MORTEN, la dernière cité humaine avant les terres hostiles.",
         "Au-delà de ses murs, vous ne rencontrerez plus que de vils monstres, barbares et assoiffés de sang.",
@@ -28,7 +28,7 @@ function auberge() {
 }
 
 function dorsDehors() {
-    changerImage("ruelle.jpg");
+    changerImage("Rue.png");
     addLines(["", "Vous trouvez un coin de ruelle abrité du vent, entre deux tonneaux de bière vides.", "L'épuisement vous terrasse en quelques secondes. Au matin, vous vous réveillez courbaturé mais vivant (+2 PV)."]);
     _dormir(false);
 }
@@ -53,7 +53,7 @@ function _dormir(hotel) {
 // MENU VILLE
 // ==========================================
 function menuVille() {
-    changerImage("kair_morten.jpg");
+    changerImage("ville.png");
     addLines(["", `── KAIR MORTEN — Jour ${s.ville.jour} ──`, "Où souhaitez-vous aller ?"]);
     addChoice("🗡  L'Arène — Combattre pour gagner or et expérience",   () => processLieu(100));
     addChoice("🏪  Le Marché — Acheter des équipements",                () => processLieu(110));
